@@ -9,4 +9,20 @@ public class Condivisione {
         this.utente = utente;
         this.toDo = toDo;
     }
+
+    public Utente getUtente() {
+        return utente;
+    }
+
+    public void setUtente(Utente utente) {
+        this.utente = utente;
+    }
+
+    public ToDo getToDo() {
+        return toDo;
+    }
+
+    public void setToDo(ToDo toDo) {
+        this.toDo = toDo;
+    }
 }
