@@ -120,4 +120,12 @@ public class ToDo {
     public void setCondivisioni(List<Condivisione> condivisioni) {
         this.condivisioni = condivisioni;
     }
+
+    public StatoToDo getStato() {
+        return stato;
+    }
+
+    public void setStato(StatoToDo stato) {
+        this.stato = stato;
+    }
 }
