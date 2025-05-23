@@ -31,9 +31,13 @@ public class MainFrame extends JFrame {
         boardsPanel.setBackground(Color.WHITE);
         boardsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        boardsPanel.add(new BachecaPanel("Università"));
-        boardsPanel.add(new BachecaPanel("Lavoro"));
-        boardsPanel.add(new BachecaPanel("Tempo Libero"));
+        universitaPanel = new BachecaPanel("Universita");
+        lavoroPanel = new BachecaPanel("Lavoro");
+        tempoLiberoPanel = new BachecaPanel("Tempo Libero");
+
+        boardsPanel.add(universitaPanel);
+        boardsPanel.add(lavoroPanel);
+        boardsPanel.add(tempoLiberoPanel);
 
         add(header, BorderLayout.NORTH);
         add(boardsPanel, BorderLayout.CENTER);
