@@ -1,22 +1,24 @@
+package gui;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
 
-public class MainFrame exteds JFrame {
+public class MainFrame extends JFrame {
     public MainFrame(String username){
         setTitle("ToDo Manager - Bacheche");
-        setSize(1000. 600);
+        setSize(1000, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
         //Header
-        JLaber welcomeLabel = newJLabel("Benvenuto," + username);
-        welcomeLabel.setFont(new Font("Segoe UI," Font.BOLD, 18));
+        JLabel welcomeLabel = new JLabel("Benvenuto," + username);
+        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         welcomeLabel.setForeground(Color.WHITE);
 
-        JPanel header = new JPanel(newFlowLayout(FlowLayout.LEFT));
+        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT));
         header.setBackground(new Color(6, 0, 64)); //#060040
         header.add(welcomeLabel);
 
