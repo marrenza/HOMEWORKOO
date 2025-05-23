@@ -8,7 +8,7 @@ public class LoginFrame extends JFrame {
         setTitle("Login - ToDo Manager");
         setSize(400, 300);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        getContentPane().setBackground(new Color(255, 255, 255));
+        getContentPane().setBackground(Color.WHITE);
         setLocationRelativeTo(null);
         setLayout(new GridBagLayout());
 
