@@ -6,6 +6,10 @@ import java.awt.event.*;
 
 
 public class MainFrame extends JFrame {
+    private BachecaPanel universitaPanel;
+    private BachecaPanel lavoroPanel;
+    private BachecaPanel tempoLiberoPanel;
+
     public MainFrame(String username){
         setTitle("ToDo Manager - Bacheche");
         setSize(1000, 600);
@@ -33,5 +37,18 @@ public class MainFrame extends JFrame {
 
         add(header, BorderLayout.NORTH);
         add(boardsPanel, BorderLayout.CENTER);
+    }
+
+    // Getter per i pannelli per poter aggiungere ToDo dal controller
+    public BachecaPanel getUniversitaPanel() {
+        return universitaPanel;
+    }
+
+    public BachecaPanel getLavoroPanel() {
+        return lavoroPanel;
+    }
+
+    public BachecaPanel getTempoLiberoPanel() {
+        return tempoLiberoPanel;
     }
 }

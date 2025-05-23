@@ -6,6 +6,8 @@ import java.awt.event.*;
 
 
 public class BachecaPanel extends JPanel {
+    private JPanel todoList;
+
     public BachecaPanel(String titolo) {
         setLayout(new BorderLayout());
         setBackground(new Color(11, 0, 128));
@@ -23,5 +25,12 @@ public class BachecaPanel extends JPanel {
         scrollPane.setBorder(null);
 
         add(scrollPane, BorderLayout.CENTER);
+    }
+
+    // Metodo per aggiungere ToDoPanel dinamicamente
+    public void aggiungiToDo(ToDoPanel todo) {
+        todoList.add(todo);
+        todoList.revalidate();
+        todoList.repaint();
     }
 }

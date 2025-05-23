@@ -4,6 +4,10 @@ import java.awt.*;
 import java.awt.event.*;
 
 public class LoginFrame extends JFrame {
+    private JTextField userField;
+    private JPasswordField passField;
+    private JButton loginButton;
+
     public LoginFrame() {
         setTitle("Login - ToDo Manager");
         setSize(400, 300);
@@ -30,8 +34,22 @@ public class LoginFrame extends JFrame {
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.gridx = 0; gbc.gridy = 0; add(userLabel, gbc);
         gbc.gridx = 1; add(userField, gbc);
-        gbc.grix = 0; gbc.gridy = 1; add(passLabel, gbc);
+        gbc.gridx = 0; gbc.gridy = 1; add(passLabel, gbc);
         gbc.gridx = 1; add(passField, gbc);
         gbc.gridx = 1; gbc.gridy = 2; add(loginButton, gbc);
     }
+
+    // Getter per controller
+    public JButton getLoginButton() {
+        return loginButton;
+    }
+
+    public JTextField getUserField() {
+        return userField;
+    }
+
+    public JPasswordField getPassField() {
+        return passField;
+    }
+
 }
