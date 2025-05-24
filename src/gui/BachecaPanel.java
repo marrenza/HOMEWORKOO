@@ -3,10 +3,13 @@ package gui;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class BachecaPanel extends JPanel {
-    private JPanel todoList;
+    private JPanel todoListPanel;
+    private List<ToDoPanel> currentToDoPanels;
 
     public BachecaPanel(String titolo) {
         setLayout(new BorderLayout());
@@ -17,20 +20,32 @@ public class BachecaPanel extends JPanel {
         titoloLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         add(titoloLabel, BorderLayout.NORTH);
 
-        JPanel todoList = new JPanel();
-        todoList.setLayout(new BoxLayout(todoList, BoxLayout.Y_AXIS));
-        todoList.setBackground(Color.WHITE);
+        todoListPanel = new JPanel();
+        todoListPanel.setLayout(new BoxLayout(todoListPanel, BoxLayout.Y_AXIS));
+        todoListPanel.setBackground(Color.WHITE);
 
-        JScrollPane scrollPane = new JScrollPane(todoList);
+        JScrollPane scrollPane = new JScrollPane(todoListPanel);
         scrollPane.setBorder(null);
 
         add(scrollPane, BorderLayout.CENTER);
+        currentToDoPanels = new ArrayList<>();
     }
 
     // Metodo per aggiungere ToDoPanel dinamicamente
-    public void aggiungiToDo(ToDoPanel todo) {
-        todoList.add(todo);
-        todoList.revalidate();
-        todoList.repaint();
+    public void aggiungiToDo(ToDoPanel todoPanel) {
+        todoListPanel.add(todoPanel);
+        currentToDoPanels.add(todoPanel);
+        todoListPanel.revalidate();
+        todoListPanel.repaint();
+    }
+
+    public void clearToDos() {
+        todoListPanel.removeAll();
+        currentToDoPanels.clear();
+        todoListPanel.revalidate();
+        todoListPanel.repaint();
+    }
+    public List<ToDoPanel> getCurrentToDoPanels() {
+        return currentToDoPanels;
     }
 }

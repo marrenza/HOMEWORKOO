@@ -1,29 +1,69 @@
 package gui;
 
+import model.ToDo;
+import model.StatoToDo;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
+import java.time.LocalDate;
 
 
 public class ToDoPanel extends JPanel {
-    public ToDoPanel(String titolo, boolean completato, boolean scaduto) {
+    private JLabel titleLabel;
+    private JCheckBox completatoCheckbox;
+    private ToDo toDo;
+
+    public ToDoPanel(ToDo toDo) {
+        this.toDo = toDo;
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+        setBackground(Color.WHITE);
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
 
-        Color bgColor;
-        if(completato) {
-            bgColor = new Color(169, 162, 243);
-        } else if  (scaduto) {
-            bgColor = new Color(255, 200, 200);
-        } else {
-            bgColor = Color.WHITE;
+        titleLabel = new JLabel(toDo.getTitolo());
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+        completatoCheckbox = new JCheckBox("Completato");
+        completatoCheckbox.setSelected(toDo.getStato() == StatoToDo.COMPLETATO);
+        completatoCheckbox.setBackground(Color.WHITE);
+        completatoCheckbox.setFocusPainted(false);
+
+        add(titleLabel, BorderLayout.CENTER);
+        add(completatoCheckbox, BorderLayout.EAST);
+
+        if(toDo.getColoreSfondo() != null && !toDo.getColoreSfondo().isEmpty()) {
+            try {
+                Color bgColor = Color.decode(toDo.getColoreSfondo());
+                setBackground(bgColor);
+                completatoCheckbox.setBackground(bgColor);
+            } catch (NumberFormatException ex) {
+                System.err.println("Formato colore non valido per ToDo " + toDo.getId() + ": " + toDo.getColoreSfondo());
+                setBackground(Color.WHITE);
+                completatoCheckbox.setBackground(Color.WHITE);
+            }
         }
+        checkAndMarkExpired();
+    }
 
-        setBackground(bgColor);
+    public void checkAndMarkExpired() {
+        if(toDo.getScadenza() != null && toDo.getScadenza().isBefore(LocalDate.now())) {
+            titleLabel.setForeground(Color.RED);
+        } else {
+            titleLabel.setForeground(Color.BLACK);
+        }
+    }
 
-        JLabel title = new JLabel(titolo);
-        title.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        title.setForeground(Color.BLACK);
+    public void setBackgroundColor(Color color) {
+        setBackground(color);
+        completatoCheckbox.setBackground(color);
+    }
 
-        add(title, BorderLayout.CENTER);
+    public JCheckBox getCompletatoCheckbox() {
+        return completatoCheckbox;
+    }
+
+    public ToDo getToDo() {
+        return toDo;
     }
 }

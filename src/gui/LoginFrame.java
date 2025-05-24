@@ -18,9 +18,10 @@ public class LoginFrame extends JFrame {
 
         JLabel userLabel = new JLabel("Username:");
         JLabel passLabel = new JLabel("Password:");
-        JTextField userField = new JTextField(15);
-        JPasswordField passField = new JPasswordField(15);
-        JButton loginButton = new JButton("Login");
+        userField = new JTextField(15);
+        passField = new JPasswordField(15);
+        loginButton = new JButton("Login");
+
 
         userLabel.setForeground(Color.BLACK);
         passLabel.setForeground(Color.BLACK);
@@ -28,7 +29,9 @@ public class LoginFrame extends JFrame {
         passLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         loginButton.setBackground(new Color(83, 69, 230));
-        loginButton.setForeground(Color.WHITE);
+        loginButton.setForeground(Color.BLACK);
+        loginButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        loginButton.setFocusPainted(false);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);

@@ -59,8 +59,9 @@ public class Utente {
     public void aggiungiBacheca(Bacheca bacheca) {
         if(bacheche.size() < 3) {
             bacheche.add(bacheca);
+            bacheca.setProprietario(this);
         } else {
-            throw new IllegalStateException("Un utente può avere massimo 3 bacheche.");
+            System.err.println("Un utente può avere al massimo 3 bacheche");
         }
     }
 
@@ -70,6 +71,19 @@ public class Utente {
 
     public void setCondivisioni(List<Condivisione> condivisioni) {
         this.condivisioni = condivisioni;
+    }
+
+    public void aggiungiCondivisione(Condivisione condivisione) {
+        if (this.condivisioni == null) {
+            this.condivisioni = new ArrayList<>();
+        }
+        this.condivisioni.add(condivisione);
+    }
+
+    public void rimuoviCondivisione(Condivisione condivisione) {
+        if (this.condivisioni != null) {
+            this.condivisioni.remove(condivisione);
+        }
     }
 }
 

@@ -33,6 +33,7 @@ public class ToDo {
         this.coloreSfondo = coloreSfondo;
         this.posizione = posizione;
     }
+
     public int getId() {
         return id;
     }
@@ -127,5 +128,18 @@ public class ToDo {
 
     public void setStato(StatoToDo stato) {
         this.stato = stato;
+    }
+
+    public void aggiungiCondivisione(Condivisione condivisione) {
+        if(this.condivisioni == null) {
+            this.condivisioni = new ArrayList<>();
+        }
+        this.condivisioni.add(condivisione);
+    }
+
+    public void rimuoviCondivisione(Condivisione condivisione) {
+        if(this.condivisioni != null) {
+            this.condivisioni.remove(condivisione);
+        }
     }
 }
