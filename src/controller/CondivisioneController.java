@@ -137,4 +137,52 @@ public class CondivisioneController {
         }
         JOptionPane.showMessageDialog(null, "Condivisione rimossa.");
     }
+
+    public void openManageSharingDialog(ToDo todo) {
+        if (todo.getCondivisioni() == null || todo.getCondivisioni().isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Questo ToDo non è condiviso con nessuno.", "Gestione Condivisioni", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Prendi la lista di utenti con cui è condiviso
+        List<Utente> sharedUsers = todo.getCondivisioni().stream()
+                .map(Condivisione::getUtente)
+                .collect(Collectors.toList());
+
+        // Crea un array di nomi per il dialogo
+        String[] userNames = sharedUsers.stream().map(Utente::getNome).toArray(String[]::new);
+
+        // Mostra un JComboBox in un JOptionPane per far scegliere all'utente
+        String userToManage = (String) JOptionPane.showInputDialog(
+                null,
+                "Seleziona un utente da rimuovere:",
+                "Gestisci Condivisioni",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                userNames,
+                userNames[0]
+        );
+
+        if (userToManage == null) return; // L'utente ha premuto "Annulla"
+
+        // Trova l'oggetto Utente selezionato
+        Utente utenteSelezionato = sharedUsers.stream()
+                .filter(u -> u.getNome().equals(userToManage))
+                .findFirst().orElse(null);
+
+        if (utenteSelezionato != null) {
+            int confirm = JOptionPane.showConfirmDialog(
+                    null,
+                    "Sei sicuro di voler rimuovere la condivisione con " + utenteSelezionato.getNome() + "?",
+                    "Conferma Rimozione",
+                    JOptionPane.YES_NO_OPTION
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                // Usa il tuo metodo (già esistente) per rimuovere la condivisione!
+                removeSharing(todo, utenteSelezionato);
+                JOptionPane.showMessageDialog(null, "Condivisione con " + utenteSelezionato.getNome() + " rimossa.");
+            }
+        }
+    }
 }

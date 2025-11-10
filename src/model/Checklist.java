@@ -27,6 +27,10 @@ public class Checklist {
     }
 
     public boolean isCompletata() {
+        if (attivita.isEmpty()) {
+            return false;
+        }
+
         for(Attivita a : attivita) {
             if(a.getStato() != StatoAttivita.COMPLETATO) {
                 return false;

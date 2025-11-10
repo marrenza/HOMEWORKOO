@@ -6,11 +6,11 @@ import java.awt.event.*;
 
 
 public class MainFrame extends JFrame {
-    private BachecaPanel universitaPanel;
-    private BachecaPanel lavoroPanel;
-    private BachecaPanel tempoLiberoPanel;
+    private JPanel bachechePanel;
     private JButton addToDoButton;
     private JButton searchButton;
+    private JButton  addBachecaButton;
+    private JButton deleteBachecaButton;
     private JLabel welcomeLabel;
 
     public MainFrame(String username){
@@ -20,6 +20,8 @@ public class MainFrame extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
+        setResizable(true);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         //Header
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(new Color(6, 0, 64));
@@ -33,6 +35,7 @@ public class MainFrame extends JFrame {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setOpaque(false);
 
+
         addToDoButton = new JButton("Aggiungi ToDo");
         styleButton(addToDoButton);
         buttonPanel.add(addToDoButton);
@@ -41,21 +44,23 @@ public class MainFrame extends JFrame {
         styleButton(searchButton);
         buttonPanel.add(searchButton);
 
+        addBachecaButton = new JButton("Crea Bacheca");
+        styleButton(addBachecaButton);
+        buttonPanel.add(addBachecaButton);
+
+        deleteBachecaButton = new JButton("Elimina Bacheca");
+        styleButton(deleteBachecaButton);
+        buttonPanel.add(deleteBachecaButton);
+
+        headerPanel.add(buttonPanel, BorderLayout.EAST);
         add(headerPanel, BorderLayout.NORTH);
 
-        JPanel boardsPanel = new JPanel(new GridLayout(1, 3, 10, 10));
-        boardsPanel.setBackground(Color.WHITE);
-        boardsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        bachechePanel = new JPanel(new GridLayout(1, 3, 10, 10));
+        bachechePanel.setBackground(Color.WHITE);
+        bachechePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        universitaPanel = new BachecaPanel("Universita");
-        lavoroPanel = new BachecaPanel("Lavoro");
-        tempoLiberoPanel = new BachecaPanel("Tempo Libero");
 
-        boardsPanel.add(universitaPanel);
-        boardsPanel.add(lavoroPanel);
-        boardsPanel.add(tempoLiberoPanel);
-
-        add(boardsPanel, BorderLayout.CENTER);
+        add(bachechePanel, BorderLayout.CENTER);
     }
 
     private void styleButton(JButton button) {
@@ -70,16 +75,8 @@ public class MainFrame extends JFrame {
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
     // Getter per i pannelli per poter aggiungere ToDo dal controller
-    public BachecaPanel getUniversitaPanel() {
-        return universitaPanel;
-    }
-
-    public BachecaPanel getLavoroPanel() {
-        return lavoroPanel;
-    }
-
-    public BachecaPanel getTempoLiberoPanel() {
-        return tempoLiberoPanel;
+    public JPanel getBachechePanel() {
+        return bachechePanel;
     }
 
     public JButton getAddToDoButton() {
@@ -88,5 +85,11 @@ public class MainFrame extends JFrame {
 
     public JButton getSearchButton() {
         return searchButton;
+    }
+    public JButton getAddBachecaButton() {
+        return addBachecaButton;
+    }
+    public JButton getDeleteBachecaButton() {
+        return deleteBachecaButton;
     }
 }

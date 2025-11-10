@@ -19,11 +19,13 @@ public class ToDo {
 
     private Bacheca bacheca;
 
+    private Utente autore;
+
     private List<Condivisione> condivisioni;
 
     //costruttore
     public ToDo(int id, String titolo, String descrizione, LocalDate scadenza,
-                String imaginePath, String URL, String coloreSfondo, int posizione) {
+                String imaginePath, String URL, String coloreSfondo, int posizione, Utente autore) {
         this.id = id;
         this.titolo = titolo;
         this.descrizione = descrizione;
@@ -32,6 +34,8 @@ public class ToDo {
         this.URL = URL;
         this.coloreSfondo = coloreSfondo;
         this.posizione = posizione;
+        this.stato = StatoToDo.NON_COMPLETATO;
+        this.autore = autore;
     }
 
     public int getId() {
@@ -130,6 +134,14 @@ public class ToDo {
         this.stato = stato;
     }
 
+    public Utente getAutore() {
+        return autore;
+    }
+    public void setAutore(Utente autore) {
+        this.autore = autore;
+    }
+
+
     public void aggiungiCondivisione(Condivisione condivisione) {
         if(this.condivisioni == null) {
             this.condivisioni = new ArrayList<>();
@@ -142,4 +154,16 @@ public class ToDo {
             this.condivisioni.remove(condivisione);
         }
     }
+
+    public void aggiornaStatoDaChecklist() {
+        if (this.checklist != null && !this.checklist.getAttivita().isEmpty()) {
+
+            if (this.checklist.isCompletata()) {
+                this.setStato(StatoToDo.COMPLETATO);
+            } else {
+                this.setStato(StatoToDo.NON_COMPLETATO);
+            }
+        }
+    }
+
 }

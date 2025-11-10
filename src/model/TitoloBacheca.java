@@ -1,7 +1,21 @@
 package model;
 
 public enum TitoloBacheca {
-    UNIVERSITA,
-    LAVORO,
-    TEMPO_LIBERO
+    UNIVERSITA("Università"),
+    LAVORO("Lavoro"),
+    TEMPO_LIBERO("Tempo Libero");
+
+    private final String nomeVisibile;
+    TitoloBacheca(String nomeVisibile) {
+        this.nomeVisibile = nomeVisibile;
+    }
+
+    @Override
+    public String toString() {
+        return nomeVisibile;
+    }
+
+    public String getNomeVisibile() {
+        return nomeVisibile;
+    }
 }

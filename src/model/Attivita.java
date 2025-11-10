@@ -5,9 +5,9 @@ public class Attivita {
     private StatoAttivita stato;
 
     //costruttore
-    public Attivita(String nome, StatoAttivita stato) {
+    public Attivita(String nome) {
         this.nome = nome;
-        this.stato = stato;
+        this.stato = StatoAttivita.NON_COMPLETATO;
     }
 
     public String getNome() {

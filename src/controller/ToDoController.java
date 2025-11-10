@@ -4,10 +4,12 @@ import gui.*;
 import model.*;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ToDoController {
     private LoginFrame loginFrame;
@@ -64,67 +66,169 @@ public class ToDoController {
         mainFrame.getAddToDoButton().addActionListener(e -> toDoDialogController.openAddToDoDialog());
         mainFrame.getSearchButton().addActionListener(e -> ricercaController.openSearchDialog());
 
+        mainFrame.getAddBachecaButton().addActionListener(e -> openCreaBachecaDialog());
+        mainFrame.getDeleteBachecaButton().addActionListener(e -> openEliminaBachecaDialog());
         refreshMainFrameToDos();
         mainFrame.setVisible(true);
     }
 
     public void refreshMainFrameToDos() {
-        mainFrame.getUniversitaPanel().clearToDos();
-        mainFrame.getTempoLiberoPanel().clearToDos();
-        mainFrame.getLavoroPanel().clearToDos();
+        JPanel bachechePanel = mainFrame.getBachechePanel();
+        bachechePanel.removeAll();
 
+        int numBacheche = utenteCorrente.getBacheche().size();
+        if(numBacheche > 0) {
+            bachechePanel.setLayout(new GridLayout(1, numBacheche, 10, 10));
+        }
         for(Bacheca b : utenteCorrente.getBacheche()) {
+            BachecaPanel bachecaPanel = new BachecaPanel(b);
+            bachecaPanel.getModifyDescButton().addActionListener(e ->
+                    openModificaDescrizioneDialog(b, bachecaPanel));
             b.getToDoList().sort((t1, t2) -> Integer.compare(t1.getPosizione(), t2.getPosizione()));
-            for(ToDo todo : b.getToDoList()) {
-                ToDoPanel todoPanel = new ToDoPanel(todo);
-                todoPanel.addMouseListener(new MouseAdapter() {
+            for(ToDo toDo : b.getToDoList()) {
+                ToDoPanel toDoPanel = new ToDoPanel(toDo);
+                toDoPanel.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mousePressed(MouseEvent e) {
                         if(e.isPopupTrigger()) {
-                            showToDoContextMenu(e, todo);
+                            showToDoContextMenu(e, toDo);
                         }
                     }
-
                     @Override
                     public void mouseReleased(MouseEvent e) {
                         if(e.isPopupTrigger()) {
-                            showToDoContextMenu(e, todo);
+                            showToDoContextMenu(e, toDo);
                         }
                     }
                 });
-                todoPanel.getCompletatoCheckbox().addActionListener(e -> handleToDoCompletionChange(todo, todoPanel.getCompletatoCheckbox().isSelected()));
-                if(b.getTitolo() == TitoloBacheca.UNIVERSITA) {
-                    mainFrame.getUniversitaPanel().aggiungiToDo(todoPanel);
-                } else if(b.getTitolo() == TitoloBacheca.TEMPO_LIBERO) {
-                    mainFrame.getTempoLiberoPanel().aggiungiToDo((todoPanel));
-                } else if(b.getTitolo() == TitoloBacheca.LAVORO) {
-                    mainFrame.getLavoroPanel().aggiungiToDo(todoPanel);
+                toDoPanel.getCompletatoCheckbox().addActionListener(e ->
+                        handleToDoCompletionChange(toDo, toDoPanel.getCompletatoCheckbox().isSelected()));
+
+                toDoPanel.getMenuButton().addActionListener(actionEvent -> {
+                    JPopupMenu popupMenu = createToDoContextMenu(toDo);
+                    JButton menuButton = (JButton) actionEvent.getSource();
+                    popupMenu.show(menuButton, 0, menuButton.getHeight());
+                });
+
+                for (JCheckBox subTaskCb : toDoPanel.getSubTaskCheckboxes()) {
+                    Attivita attivita = (Attivita) subTaskCb.getClientProperty("ATTIVITA_OBJ");
+
+                    subTaskCb.addActionListener(e ->
+                            handleSubTaskCompletionChange(toDo, attivita, subTaskCb.isSelected())
+                    );
                 }
+
+                bachecaPanel.aggiungiToDo(toDoPanel);
             }
+            bachechePanel.add(bachecaPanel);
         }
+        bachechePanel.revalidate();
+        bachechePanel.repaint();
     }
 
-    private void showToDoContextMenu(MouseEvent e, ToDo todo) {
+    private JPopupMenu createToDoContextMenu(ToDo todo) {
         JPopupMenu popupMenu = new JPopupMenu();
 
+        // --- Azione "Info" ---
+        JMenuItem infoItem = new JMenuItem("Info");
+        infoItem.addActionListener(actionEvent -> showToDoInfo(todo));
+        popupMenu.add(infoItem);
+        popupMenu.addSeparator();
+
+        // --- Creazione Voci Menu ---
         JMenuItem editItem = new JMenuItem("Modifica");
         JMenuItem deleteItem = new JMenuItem("Elimina");
         JMenuItem moveItem = new JMenuItem("Sposta in...");
-        JMenuItem shareItem = new JMenuItem("Condividi");
+        JMenuItem shareItem = new JMenuItem("Condividi (Aggiungi)");
+        JMenuItem manageShareItem = new JMenuItem("Gestisci/Rimuovi Condivisi");
         JMenuItem viewSharedUsersitem = new JMenuItem("Visualizza condivisioni");
+        JMenuItem moveUpItem = new JMenuItem("Sposta Su");
+        JMenuItem moveDownItem = new JMenuItem("Sposta Giù");
 
+        // --- Collegamento Azioni ---
         editItem.addActionListener(actionEvent -> toDoDialogController.openEditToDoDialog(todo));
         deleteItem.addActionListener(actionEvent -> deleteToDo(todo));
         moveItem.addActionListener(actionEvent -> openMoveToDoDialog(todo));
         shareItem.addActionListener(actionEvent -> condivisioneController.openShareToDoDialog(todo));
         viewSharedUsersitem.addActionListener(actionEvent -> condivisioneController.showSharedUsers(todo));
+        manageShareItem.addActionListener(actionEvent -> condivisioneController.openManageSharingDialog(todo));
+        moveUpItem.addActionListener(actionEvent -> spostaToDo(todo, -1));
+        moveDownItem.addActionListener(actionEvent -> spostaToDo(todo, 1));
 
+        // --- Logica Abilitazione Pulsanti (Req. [14]) ---
+        boolean isAutore = false;
+        if (todo.getAutore() != null) {
+            isAutore = (todo.getAutore().getId() == utenteCorrente.getId());
+        }
+
+        editItem.setEnabled(isAutore);
+        deleteItem.setEnabled(isAutore);
+        shareItem.setEnabled(isAutore);
+        manageShareItem.setEnabled(isAutore);
+        viewSharedUsersitem.setEnabled(true);
+        moveItem.setEnabled(true);
+        moveUpItem.setEnabled(true);
+        moveDownItem.setEnabled(true);
+
+        if (todo.getPosizione() == 0) {
+            moveUpItem.setEnabled(false);
+        }
+        if (todo.getBacheca() != null && todo.getPosizione() == todo.getBacheca().getToDoList().size() - 1) {
+            moveDownItem.setEnabled(false);
+        }
+
+        // --- Aggiunta Voci al Menu ---
         popupMenu.add(editItem);
         popupMenu.add(deleteItem);
         popupMenu.add(moveItem);
+        popupMenu.addSeparator();
         popupMenu.add(shareItem);
+        popupMenu.add(manageShareItem);
         popupMenu.add(viewSharedUsersitem);
+        popupMenu.addSeparator();
+        popupMenu.add(moveUpItem);
+        popupMenu.add(moveDownItem);
+
+        return popupMenu;
+    }
+
+    private void showToDoContextMenu(MouseEvent e, ToDo todo) {
+        JPopupMenu popupMenu = createToDoContextMenu(todo);
         popupMenu.show(e.getComponent(), e.getX(), e.getY());
+    }
+
+    private void spostaToDo(ToDo todo, int direzione) {
+        Bacheca bacheca = todo.getBacheca();
+        if (bacheca == null) return;
+
+        List<ToDo> todoList = bacheca.getToDoList();
+
+        // Usiamo la posizione salvata nel ToDo come indice
+        int currentIndex = todo.getPosizione();
+        int newIndex = currentIndex + direzione;
+
+        // Controlla i limiti (anche se già disabilitati nel menu, è una sicurezza)
+        if (newIndex < 0 || newIndex >= todoList.size()) {
+            return;
+        }
+
+        // Trova l'altro ToDo con cui scambiare
+        ToDo otherTodo = null;
+        for (ToDo t : todoList) {
+            if (t.getPosizione() == newIndex) {
+                otherTodo = t;
+                break;
+            }
+        }
+
+        if (otherTodo == null) return; // Errore, non dovrebbe succedere
+
+        // Esegui lo scambio di posizioni
+        todo.setPosizione(newIndex);
+        otherTodo.setPosizione(currentIndex);
+
+        // Aggiorna la vista (che rilegge e riordina per posizione)
+        refreshMainFrameToDos();
     }
 
     private void handleToDoCompletionChange(ToDo todo, boolean isCompleted) {
@@ -134,11 +238,7 @@ public class ToDoController {
                 todo.setStato(StatoToDo.NON_COMPLETATO);
             }
 
-        if (todo.getChecklist() != null && todo.getChecklist().isCompletata()) {
-            todo.setStato(StatoToDo.COMPLETATO); // Auto-completa il ToDo se la checklist è completa
-        } else if (todo.getChecklist() != null && !todo.getChecklist().isCompletata() && todo.getStato() == StatoToDo.COMPLETATO) {
 
-            }
 
             refreshMainFrameToDos(); // Aggiorna la UI per riflettere il cambio di stato
         }
@@ -194,16 +294,15 @@ public class ToDoController {
             }
         }
         private void openMoveToDoDialog(ToDo todo) {
-            String[] bachecaTitles = {TitoloBacheca.UNIVERSITA.name(), TitoloBacheca.LAVORO.name(), TitoloBacheca.TEMPO_LIBERO.name()};
-            String selectedTitle = (String) JOptionPane.showInputDialog(
-                    mainFrame, "Seleziona la bacheca di destinazione:",
-                    "Sposta ToDo", JOptionPane.QUESTION_MESSAGE, null, bachecaTitles,
-                    todo.getBacheca() != null ? todo.getBacheca().getTitolo().name() : bachecaTitles[0]
+            TitoloBacheca[] bachecaTitoli = TitoloBacheca.values();
+            TitoloBacheca selectedTitle = (TitoloBacheca) JOptionPane.showInputDialog(
+                    mainFrame, "Seleziona la bacheca di destinazione: ",
+                    "Sposta ToDo", JOptionPane.QUESTION_MESSAGE, null,
+                    bachecaTitoli,
+                    todo.getBacheca() != null ? todo.getBacheca().getTitolo() : bachecaTitoli[0]
             );
-
             if(selectedTitle != null) {
-                TitoloBacheca targetTitoloBacheca = TitoloBacheca.valueOf(selectedTitle);
-                moveToDo(todo, targetTitoloBacheca);
+                moveToDo(todo, selectedTitle);
             }
         }
 
@@ -249,25 +348,25 @@ public class ToDoController {
         Utente u1 = new Utente(123, "Marianna", "marianna", "stress");
 
         Bacheca uni = new Bacheca(1, TitoloBacheca.UNIVERSITA, "Organizzazione per l'università");
-        ToDo todo1 = new ToDo(14, "Studiare Java", "Studiare capitolo 7 + esercizi", LocalDate.parse("2025-06-08"), "path/to/image.png", "https://url.com", "#FFFFFF", 1);
+        ToDo todo1 = new ToDo(14, "Studiare Java", "Studiare capitolo 7 + esercizi", LocalDate.parse("2025-06-08"), "path/to/image.png", "https://url.com", "#FFFFFF", 1, u1);
         todo1.setStato(StatoToDo.NON_COMPLETATO);
         Checklist checklist1 = new Checklist();
-        checklist1.aggiungiAttivita(new Attivita("Leggere Cap 7", StatoAttivita.NON_COMPLETATO));
-        checklist1.aggiungiAttivita(new Attivita("Fare esercizi", StatoAttivita.NON_COMPLETATO));
+        checklist1.aggiungiAttivita(new Attivita("Leggere Cap 7"));
+        checklist1.aggiungiAttivita(new Attivita("Fare esercizi"));
         todo1.setChecklist(checklist1);
         uni.aggiungiToDo(todo1);
 
-        ToDo todo2 = new ToDo(25, "Esame informatica", "Sede Monte Sant'Angelo",LocalDate.parse("2025-06-15") , "path/to/image.png", "https://url.com", "#FFFFFF", 2);
+        ToDo todo2 = new ToDo(25, "Esame informatica", "Sede Monte Sant'Angelo",LocalDate.parse("2025-06-15") , "path/to/image.png", "https://url.com", "#FFFFFF", 2, u1);
         todo2.setStato(StatoToDo.NON_COMPLETATO);
         uni.aggiungiToDo(todo1);
 
         Bacheca tempo = new Bacheca(2, TitoloBacheca.TEMPO_LIBERO, "Organizzazione degli hobby");
-        ToDo todo3 = new ToDo(32, "Leggere libro", "Guida galattica per autostoppisti, pagina 42", null, "path/to/image.png", "https://url.com", "#FFFFFF", 3);
+        ToDo todo3 = new ToDo(32, "Leggere libro", "Guida galattica per autostoppisti, pagina 42", null, "path/to/image.png", "https://url.com", "#FFFFFF", 3, u1);
         todo3.setStato(StatoToDo.NON_COMPLETATO);
         tempo.aggiungiToDo(todo3);
 
         Bacheca lavoro = new Bacheca(3, TitoloBacheca.LAVORO, "Organizazzione giornata lavorativa");
-        ToDo todo4 = new ToDo(45, "Inviare report", "Report finale", LocalDate.parse("2025-05-31"), "path/to/image.png", "https.//url.com", "#FFFFFF", 4);
+        ToDo todo4 = new ToDo(45, "Inviare report", "Report finale", LocalDate.parse("2025-05-31"), "path/to/image.png", "https.//url.com", "#FFFFFF", 4, u1);
         todo4.setStato(StatoToDo.NON_COMPLETATO);
         lavoro.aggiungiToDo(todo4);
 
@@ -292,6 +391,141 @@ public class ToDoController {
         }
         lista.add(u2);
         return lista;
+    }
+
+    private void openCreaBachecaDialog() {
+        List<TitoloBacheca> titoliPosseduti = utenteCorrente.getBacheche().stream().map(Bacheca::getTitolo).collect(Collectors.toList());
+        List<TitoloBacheca> titoliDisponibili = new ArrayList<>();
+        for(TitoloBacheca t : TitoloBacheca.values()) {
+            if(!titoliPosseduti.contains(t)) {
+                titoliDisponibili.add(t);
+            }
+        }
+        if(titoliDisponibili.isEmpty()) {
+            JOptionPane.showMessageDialog(mainFrame, "Hai già creato tutte le bacheche disponibili.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        TitoloBacheca titoloScelto = (TitoloBacheca) JOptionPane.showInputDialog(
+                mainFrame, "Scegli quale bacheca creare:",
+                "Crea Bacheca", JOptionPane.QUESTION_MESSAGE, null,
+                titoliDisponibili.toArray(),
+                titoliDisponibili.get(0)
+        );
+        if (titoloScelto != null) {
+            int newId = utenteCorrente.getBacheche().size()+100;
+            String desc = JOptionPane.showInputDialog(mainFrame, "Inserisci una descrizione per la bacheca " + titoloScelto.name() + ":");
+
+            Bacheca nuovaBacheca = new Bacheca(newId, titoloScelto, (desc != null ? desc : ""));
+            utenteCorrente.aggiungiBacheca(nuovaBacheca);
+
+            refreshMainFrameToDos();
+        }
+    }
+
+    private void openEliminaBachecaDialog() {
+        if(utenteCorrente.getBacheche().size() <= 1) {
+            JOptionPane.showMessageDialog(mainFrame, "Non puoi eliminare l'ultima bacheca. Deve rimanerne almeno una.", "Errore", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        List<TitoloBacheca> titoliPosseduti = utenteCorrente.getBacheche().stream()
+                .map(Bacheca::getTitolo)
+                .collect(Collectors.toList());
+
+        TitoloBacheca titoloDaEliminare = (TitoloBacheca) JOptionPane.showInputDialog(
+                mainFrame, "Scegli quale bacheca eliminare:",
+                "Elimina Bacheca", JOptionPane.QUESTION_MESSAGE, null,
+                titoliPosseduti.toArray(),
+                titoliPosseduti.get(0)
+        );
+
+        if(titoloDaEliminare != null) {
+            int confirm = JOptionPane.showConfirmDialog(mainFrame,
+                    "Sei sicuro di voler eliminare la bacheca '" + titoloDaEliminare.name() + "'?\n Tutti i ToDo al suo interno saranno persii.",
+                    "Conferma Eliminazione", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if(confirm == JOptionPane.YES_OPTION) {
+                utenteCorrente.getBacheche().removeIf(b -> b.getTitolo() == titoloDaEliminare);
+                refreshMainFrameToDos();
+            }
+        }
+    }
+
+    private void openModificaDescrizioneDialog(Bacheca bacheca, BachecaPanel panelView) {
+        String oldDesc =  bacheca.getDescrizione();
+        String newDesc = (String) JOptionPane.showInputDialog(
+                mainFrame,
+                "Inserisci la nuova descrizione per " + bacheca.getTitolo().name() + " :",
+                "Modifica descrizione bacheca",
+                JOptionPane.PLAIN_MESSAGE,
+                null, null, oldDesc
+        );
+        if(newDesc != null) {
+            bacheca.setDescrizione(newDesc);
+            panelView.updateDescrizioneLabel();
+            JOptionPane.showMessageDialog(mainFrame, "Descrizione aggiornata con successo.");
+        }
+    }
+
+    private void showToDoInfo(ToDo todo) {
+        JPanel infoPanel = new JPanel(new BorderLayout(10, 10));
+        infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        if(todo.getImaginePath() != null && !todo.getImaginePath().isEmpty()) {
+            try {
+                ImageIcon icon = new ImageIcon(todo.getImaginePath());
+                Image image = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                JLabel imageLabel = new JLabel(new ImageIcon(image));
+                imageLabel.setBorder(BorderFactory.createEtchedBorder());
+                infoPanel.add(imageLabel, BorderLayout.WEST);
+            } catch (Exception e) {
+                infoPanel.add(new JLabel("Immagine non trovata."), BorderLayout.WEST);
+            }
+        }
+
+        JTextArea infoArea = new JTextArea();
+        infoArea.setEditable(false);
+        infoArea.setOpaque(false);
+        infoArea.setLineWrap(true);
+        infoArea.setWrapStyleWord(true);
+        infoArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Titolo: ").append(todo.getTitolo()).append("\n\n");
+        sb.append("Descrizione:\n").append(todo.getDescrizione() != null && !todo.getDescrizione().isEmpty() ? todo.getDescrizione() : "Nessuna.").append("\n\n");
+        sb.append("Bacheca: ").append(todo.getBacheca().getTitolo().toString()).append("\n");
+        sb.append("Scadenza: ").append(todo.getScadenza() != null ? todo.getScadenza().toString() : "Nessuna.").append("\n");
+        sb.append("URL: ").append(todo.getURL() != null && !todo.getURL().isEmpty() ? todo.getURL() : "Nessuno.").append("\n");
+        infoArea.setText(sb.toString());
+
+        infoPanel.add(infoArea, BorderLayout.CENTER);
+
+        if (todo.getChecklist() != null && !todo.getChecklist().getAttivita().isEmpty()) {
+            JPanel checklistDisplayPanel = new JPanel();
+            checklistDisplayPanel.setLayout(new BoxLayout(checklistDisplayPanel, BoxLayout.Y_AXIS));
+            checklistDisplayPanel.setBorder(BorderFactory.createTitledBorder("Checklist"));
+
+            for (Attivita a : todo.getChecklist().getAttivita()) {
+                JCheckBox cb = new JCheckBox(a.getNome());
+                cb.setSelected(a.getStato() == StatoAttivita.COMPLETATO);
+                cb.setEnabled(false); // Sola lettura
+                checklistDisplayPanel.add(cb);
+            }
+            infoPanel.add(new JScrollPane(checklistDisplayPanel), BorderLayout.SOUTH);
+        }
+        JOptionPane.showMessageDialog(
+                mainFrame,
+                infoPanel,
+                "Info ToDo: " + todo.getTitolo(),
+                JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+
+    private void handleSubTaskCompletionChange(ToDo parentToDo, Attivita subTask, boolean isCompleted) {
+        subTask.setStato(isCompleted ? StatoAttivita.COMPLETATO : StatoAttivita.NON_COMPLETATO);
+
+        parentToDo.aggiornaStatoDaChecklist();
+
+        refreshMainFrameToDos();
     }
 }
 

@@ -1,18 +1,12 @@
 package controller;
 
 import gui.ToDoDialog;
-import model.Attivita;
-import model.Checklist;
-import model.StatoAttivita;
-import model.StatoToDo;
-import model.ToDo;
-import model.TitoloBacheca;
+import model.*;
 
 import javax.swing.JOptionPane;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
-import gui.ToDoDialog;
 
 public class ToDoDialogController {
     private ToDoController mainController;
@@ -22,9 +16,7 @@ public class ToDoDialogController {
         this.mainController = mainController;
     }
 
-    /**
-     * Apre il dialogo per aggiungere un nuovo ToDo.
-     */
+
     public void openAddToDoDialog() {
         toDoDialog = new ToDoDialog(null, "Aggiungi ToDo", true);
         toDoDialog.clearForm(); // Pulisce il form per un nuovo inserimento
@@ -39,9 +31,9 @@ public class ToDoDialogController {
                 if (!toDoDialog.getTxtScadenza().getText().isEmpty()) {
                     scadenza = LocalDate.parse(toDoDialog.getTxtScadenza().getText());
                 }
-                String imagePath = toDoDialog.getTxtImagePath().getText();
+                String imagePath = toDoDialog.getImagePath();
                 String url = toDoDialog.getTxtURL().getText();
-                String coloreSfondo = toDoDialog.getTxtColoreSfondo().getText();
+                String coloreSfondo = toDoDialog.getColoreSfondo();
                 TitoloBacheca selectedBacheca = (TitoloBacheca) toDoDialog.getCmbBacheca().getSelectedItem();
 
                 // Genera un ID univoco per il nuovo ToDo (semplice auto-increment per demo)
@@ -51,18 +43,24 @@ public class ToDoDialogController {
                         .max().orElse(0) + 1;
 
                 // Crea il nuovo oggetto ToDo
-                ToDo newToDo = new ToDo(newId, titolo, descrizione, scadenza, imagePath, url, coloreSfondo, 0); // Posizione 0 di default
+                ToDo newToDo = new ToDo(newId, titolo, descrizione, scadenza, imagePath, url, coloreSfondo, 0, mainController.getUtenteCorrente()); // Posizione 0 di default
                 newToDo.setStato(StatoToDo.NON_COMPLETATO); // Di default non completato
 
                 // Gestisce la checklist
                 Checklist checklist = new Checklist();
                 List<String> activityNames = toDoDialog.getChecklistActivityNames();
                 List<Boolean> activityStates = toDoDialog.getChecklistActivityCompletionStates();
+
+
+
                 for (int i = 0; i < activityNames.size(); i++) {
                     StatoAttivita statoAttivita = activityStates.get(i) ? StatoAttivita.COMPLETATO : StatoAttivita.NON_COMPLETATO;
-                    checklist.aggiungiAttivita(new Attivita(activityNames.get(i), statoAttivita));
+                    Attivita nuovaAttivita = new Attivita(activityNames.get(i));
+                    nuovaAttivita.setStato(statoAttivita);
+                    checklist.aggiungiAttivita(nuovaAttivita);
                 }
                 newToDo.setChecklist(checklist);
+                newToDo.aggiornaStatoDaChecklist();
 
                 // Aggiunge il ToDo alla bacheca tramite il controller principale
                 mainController.addToDoToBacheca(newToDo, selectedBacheca);
@@ -77,25 +75,22 @@ public class ToDoDialogController {
         toDoDialog.setVisible(true);
     }
 
-    /**
-     * Apre il dialogo per modificare un ToDo esistente.
-     * @param toDoToEdit L'oggetto ToDo da modificare.
-     */
+
     public void openEditToDoDialog(ToDo toDoToEdit) {
         toDoDialog = new ToDoDialog(null, "Modifica ToDo", true);
         // Popola i campi del dialogo con i dati del ToDo esistente
-        toDoDialog.getTxtTitolo().setText(toDoToEdit.getTitolo());
-        toDoDialog.getTxtDescrizione().setText(toDoToEdit.getDescrizione());
+        toDoDialog.setTxtTitolo(toDoToEdit.getTitolo());
+        toDoDialog.setTxtDescrizione(toDoToEdit.getDescrizione());
         if (toDoToEdit.getScadenza() != null) {
             toDoDialog.getTxtScadenza().setText(toDoToEdit.getScadenza().toString());
         } else {
             toDoDialog.getTxtScadenza().setText("");
         }
-        toDoDialog.getTxtImagePath().setText(toDoToEdit.getImaginePath());
+        toDoDialog.setImagePath(toDoToEdit.getImaginePath());
         toDoDialog.getTxtURL().setText(toDoToEdit.getURL());
-        toDoDialog.getTxtColoreSfondo().setText(toDoToEdit.getColoreSfondo());
+        toDoDialog.setColoreSfondo(toDoToEdit.getColoreSfondo());
         if (toDoToEdit.getBacheca() != null) {
-            toDoDialog.getCmbBacheca().setSelectedItem(toDoToEdit.getBacheca().getTitolo());
+            toDoDialog.setCmbBacheca(toDoToEdit.getBacheca().getTitolo());
         }
 
         // Popola la checklist nel dialogo
@@ -116,9 +111,9 @@ public class ToDoDialogController {
                 } else {
                     toDoToEdit.setScadenza(null);
                 }
-                toDoToEdit.setImaginePath(toDoDialog.getTxtImagePath().getText());
+                toDoToEdit.setImaginePath(toDoDialog.getImagePath());
                 toDoToEdit.setURL(toDoDialog.getTxtURL().getText());
-                toDoToEdit.setColoreSfondo(toDoDialog.getTxtColoreSfondo().getText());
+                toDoToEdit.setColoreSfondo(toDoDialog.getColoreSfondo());
 
                 // Aggiorna la checklist
                 Checklist updatedChecklist = new Checklist();
@@ -126,9 +121,13 @@ public class ToDoDialogController {
                 List<Boolean> activityStates = toDoDialog.getChecklistActivityCompletionStates();
                 for (int i = 0; i < activityNames.size(); i++) {
                     StatoAttivita statoAttivita = activityStates.get(i) ? StatoAttivita.COMPLETATO : StatoAttivita.NON_COMPLETATO;
-                    updatedChecklist.aggiungiAttivita(new Attivita(activityNames.get(i), statoAttivita));
+
+                    Attivita nuovaAttivita = new Attivita(activityNames.get(i));
+                    nuovaAttivita.setStato(statoAttivita);
+                    updatedChecklist.aggiungiAttivita(nuovaAttivita);
                 }
                 toDoToEdit.setChecklist(updatedChecklist);
+                toDoToEdit.aggiornaStatoDaChecklist();
 
                 // Controlla se la bacheca è cambiata e sposta il ToDo se necessario
                 TitoloBacheca newSelectedBacheca = (TitoloBacheca) toDoDialog.getCmbBacheca().getSelectedItem();

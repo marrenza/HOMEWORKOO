@@ -1,8 +1,10 @@
 package gui;
 
-import model.TitoloBacheca; // Importa l'enum TitoloBacheca
+import model.TitoloBacheca;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -12,22 +14,27 @@ public class ToDoDialog extends JDialog {
     private JTextField txtTitolo;
     private JTextArea txtDescrizione;
     private JTextField txtScadenza; // Formato YYYY-MM-DD
-    private JTextField txtImagePath;
     private JTextField txtURL;
-    private JTextField txtColoreSfondo; // Formato #RRGGBB
     private JComboBox<TitoloBacheca> cmbBacheca;
-    private JPanel checklistPanel; // Pannello per la checklist
+    private JPanel checklistPanel;
     private JButton btnAddActivity;
     private JButton btnSalva;
     private JButton btnAnnulla;
+    private JLabel lblImagePath;
+    private JButton btnSfogliaImmagine;
+    private JFileChooser imageChooser;
+    private JLabel lblColoreScelto;
+    private JButton btnScegliColore;
+    private String hexColoreSelezionato = "";
 
-    // Lista per tenere traccia dei campi di testo delle attività della checklist
     private List<JTextField> activityNameFields;
     private List<JCheckBox> activityCompletionCheckboxes;
 
+    private JScrollPane checklistScrollPane;
+
     public ToDoDialog(Frame owner, String title, boolean modal) {
         super(owner, title, modal);
-        setSize(500, 600);
+        setSize(500, 700);
         setLocationRelativeTo(owner);
         setLayout(new BorderLayout());
         setResizable(false); // Non ridimensionabile
@@ -49,27 +56,51 @@ public class ToDoDialog extends JDialog {
         txtScadenza = new JTextField(10);
         txtScadenza.setToolTipText("Formato: YYYY-MM-DD");
 
-        txtImagePath = new JTextField(20);
         txtURL = new JTextField(20);
-        txtColoreSfondo = new JTextField(10);
-        txtColoreSfondo.setToolTipText("Formato: #RRGGBB (es. #FF0000 per rosso)");
+
+        lblImagePath = new JLabel("Nessun file selezionato.");
+        lblImagePath.setBorder(BorderFactory.createEtchedBorder());
+        btnSfogliaImmagine = new JButton("Sfoglia");
+        imageChooser = new JFileChooser();
+        imageChooser.setFileFilter(new FileNameExtensionFilter("Immagini (jpg, png, gif)", "jpg", "png", "gif"));
+
+        btnSfogliaImmagine.addActionListener(e -> {
+            int result = imageChooser.showOpenDialog(this);
+            if(result == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = imageChooser.getSelectedFile();
+                lblImagePath.setText(selectedFile.getAbsolutePath());
+            }
+        });
+
+        lblColoreScelto = new JLabel(" (Nessun colore) ");
+        lblColoreScelto.setOpaque(true);
+        lblColoreScelto.setBackground(Color.WHITE);
+        lblColoreScelto.setBorder(BorderFactory.createEtchedBorder());
+        btnScegliColore = new JButton("Scegli colore: ");
+
+        btnScegliColore.addActionListener(e -> {
+            Color newColor = JColorChooser.showDialog(this, "Scegli un colore di sfondo", Color.WHITE);
+            if(newColor != null) {
+                lblColoreScelto.setBackground(newColor);
+                hexColoreSelezionato = String.format("#%06x", newColor.getRGB() & 0xFFFFFF).toUpperCase();
+                lblColoreScelto.setText(hexColoreSelezionato);
+            }
+        });
 
         cmbBacheca = new JComboBox<>(TitoloBacheca.values()); // Popola la combobox con i titoli delle bacheche
 
         checklistPanel = new JPanel();
         checklistPanel.setLayout(new BoxLayout(checklistPanel, BoxLayout.Y_AXIS));
         checklistPanel.setBorder(BorderFactory.createTitledBorder("Checklist Attività"));
-        JScrollPane checklistScrollPane = new JScrollPane(checklistPanel);
-        checklistScrollPane.setPreferredSize(new Dimension(400, 150)); // Dimensione fissa per lo scroll pane della checklist
+        checklistScrollPane = new JScrollPane(checklistPanel);
+        checklistScrollPane.setPreferredSize(new Dimension(650,400)); // Dimensione fissa per lo scroll pane della checklist
 
         btnAddActivity = new JButton("Aggiungi Attività");
         btnSalva = new JButton("Salva");
         btnAnnulla = new JButton("Annulla");
 
-        // Listener per il pulsante "Annulla"
         btnAnnulla.addActionListener(e -> dispose());
 
-        // Listener per il pulsante "Aggiungi Attività"
         btnAddActivity.addActionListener(e -> addChecklistActivityField(null, false));
     }
 
@@ -95,28 +126,37 @@ public class ToDoDialog extends JDialog {
         gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; formPanel.add(txtScadenza, gbc);
 
         // Immagine Path
-        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Percorso Immagine:"), gbc);
-        gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; formPanel.add(txtImagePath, gbc);
+        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Percorso immagine:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0;
+        JPanel imagePanel = new JPanel(new BorderLayout(5,0));
+        imagePanel.add(lblImagePath, BorderLayout.CENTER);
+        imagePanel.add(btnSfogliaImmagine, BorderLayout.EAST);
+        formPanel.add(imagePanel, gbc);
 
         // URL
         gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("URL:"), gbc);
         gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; formPanel.add(txtURL, gbc);
 
         // Colore Sfondo
-        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Colore Sfondo (#RRGGBB):"), gbc);
-        gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; formPanel.add(txtColoreSfondo, gbc);
+        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Colore Sfondo:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0;
+        JPanel colorPanel = new JPanel(new BorderLayout(5,0));
+        colorPanel.add(lblColoreScelto, BorderLayout.CENTER);
+        colorPanel.add(btnScegliColore, BorderLayout.EAST);
+        formPanel.add(colorPanel, gbc);
 
         // Bacheca
         gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Bacheca:"), gbc);
         gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; formPanel.add(cmbBacheca, gbc);
 
         // Checklist Panel
-        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2; gbc.weighty = 1.0; // Espande verticalmente
-        formPanel.add(new JScrollPane(checklistPanel), gbc);
+        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2; gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        formPanel.add(checklistScrollPane, gbc);
         row++;
 
         // Add Activity Button
-        gbc.gridx = 0; gbc.gridy = row++; gbc.gridwidth = 2; gbc.weighty = 0.0; // Reset weighty
+        gbc.gridx = 0; gbc.gridy = row++; gbc.gridwidth = 2; gbc.weighty = 0.0;
         formPanel.add(btnAddActivity, gbc);
 
 
@@ -129,15 +169,16 @@ public class ToDoDialog extends JDialog {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    /**
-     * Aggiunge un campo per un'attività della checklist al pannello.
-     * @param activityName Il nome dell'attività (può essere null per una nuova attività).
-     * @param isCompleted Lo stato di completamento dell'attività.
-     */
+
     public void addChecklistActivityField(String activityName, boolean isCompleted) {
         JPanel activityRow = new JPanel(new BorderLayout());
         JTextField activityField = new JTextField(activityName);
-        JCheckBox activityCheckbox = new JCheckBox("Completato");
+
+        Dimension fieldSize = new Dimension(Integer.MAX_VALUE, activityField.getPreferredSize().height);
+        activityField.setMaximumSize(fieldSize);
+        activityRow.setMaximumSize(fieldSize);
+
+        JCheckBox activityCheckbox = new JCheckBox();
         activityCheckbox.setSelected(isCompleted);
 
         activityNameFields.add(activityField);
@@ -168,18 +209,20 @@ public class ToDoDialog extends JDialog {
     public JTextField getTxtTitolo() { return txtTitolo; }
     public JTextArea getTxtDescrizione() { return txtDescrizione; }
     public JTextField getTxtScadenza() { return txtScadenza; }
-    public JTextField getTxtImagePath() { return txtImagePath; }
     public JTextField getTxtURL() { return txtURL; }
-    public JTextField getTxtColoreSfondo() { return txtColoreSfondo; }
     public JComboBox<TitoloBacheca> getCmbBacheca() { return cmbBacheca; }
     public JButton getBtnSalva() { return btnSalva; }
     public JButton getBtnAnnulla() { return btnAnnulla; }
     public JButton getBtnAddActivity() { return btnAddActivity; }
+    public String getImagePath() {
+        String path = lblImagePath.getText();
+        return path.equals("Nessun file selezionato.") ? "" : path;
+    }
+    public String getColoreSfondo() {
+        return hexColoreSelezionato;
+    }
 
-    /**
-     * Restituisce la lista dei nomi delle attività della checklist.
-     * @return Una lista di String contenente i nomi delle attività.
-     */
+
     public List<String> getChecklistActivityNames() {
         List<String> names = new ArrayList<>();
         for (JTextField field : activityNameFields) {
@@ -188,10 +231,6 @@ public class ToDoDialog extends JDialog {
         return names;
     }
 
-    /**
-     * Restituisce la lista degli stati di completamento delle attività della checklist.
-     * @return Una lista di boolean che indica lo stato di completamento.
-     */
     public List<Boolean> getChecklistActivityCompletionStates() {
         List<Boolean> states = new ArrayList<>();
         for (JCheckBox checkbox : activityCompletionCheckboxes) {
@@ -200,21 +239,52 @@ public class ToDoDialog extends JDialog {
         return states;
     }
 
-    /**
-     * Pulisce tutti i campi del form.
-     */
     public void clearForm() {
         txtTitolo.setText("");
         txtDescrizione.setText("");
         txtScadenza.setText("");
-        txtImagePath.setText("");
         txtURL.setText("");
-        txtColoreSfondo.setText("");
         cmbBacheca.setSelectedIndex(0);
+        lblImagePath.setText("Nessun file selezionato.");
+        hexColoreSelezionato = "";
+        lblColoreScelto.setText(" (Nessun colore) ");
+        lblColoreScelto.setBackground(Color.WHITE);
         checklistPanel.removeAll();
         activityNameFields.clear();
         activityCompletionCheckboxes.clear();
         checklistPanel.revalidate();
         checklistPanel.repaint();
+    }
+
+    public void setTxtTitolo(String s) { txtTitolo.setText(s); }
+    public void setTxtDescrizione(String s) { txtDescrizione.setText(s); }
+    public void setTxtScadenza(String s) { txtScadenza.setText(s); }
+    public void setTxtURL(String s) { txtURL.setText(s); }
+    public void setCmbBacheca(TitoloBacheca t) { cmbBacheca.setSelectedItem(t); }
+
+    public void setImagePath(String s) {
+        if (s == null || s.isEmpty()) {
+            lblImagePath.setText("Nessun file selezionato.");
+        } else {
+            lblImagePath.setText(s);
+        }
+    }
+
+    public void setColoreSfondo(String hex) {
+        if (hex == null || hex.isEmpty()) {
+            hexColoreSelezionato = "";
+            lblColoreScelto.setText(" (Nessun colore) ");
+            lblColoreScelto.setBackground(Color.WHITE);
+        } else {
+            try {
+                Color c = Color.decode(hex);
+                hexColoreSelezionato = hex;
+                lblColoreScelto.setBackground(c);
+                lblColoreScelto.setText(hex);
+            } catch (NumberFormatException e) {
+                // Se il colore salvato non è valido, resetta
+                setColoreSfondo(null);
+            }
+        }
     }
 }
