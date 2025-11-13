@@ -203,31 +203,30 @@ public class ToDoController {
 
         List<ToDo> todoList = bacheca.getToDoList();
 
+        todoList.sort((t1, t2) -> Integer.compare(t1.getPosizione(), t2.getPosizione()));
+
         // Usiamo la posizione salvata nel ToDo come indice
-        int currentIndex = todo.getPosizione();
-        int newIndex = currentIndex + direzione;
-
-        // Controlla i limiti (anche se già disabilitati nel menu, è una sicurezza)
-        if (newIndex < 0 || newIndex >= todoList.size()) {
-            return;
-        }
-
-        // Trova l'altro ToDo con cui scambiare
-        ToDo otherTodo = null;
-        for (ToDo t : todoList) {
-            if (t.getPosizione() == newIndex) {
-                otherTodo = t;
+        int currentIndex = -1;
+        for (int i = 0; i < todoList.size(); i++) {
+            if (todoList.get(i).getId() == todo.getId()) {
+                currentIndex = i;
                 break;
             }
         }
+        if(currentIndex == -1) return;
 
-        if (otherTodo == null) return; // Errore, non dovrebbe succedere
+        int newIndex =  currentIndex + direzione;
 
-        // Esegui lo scambio di posizioni
-        todo.setPosizione(newIndex);
-        otherTodo.setPosizione(currentIndex);
+        if(newIndex < 0 || newIndex >= todoList.size()) return;
 
-        // Aggiorna la vista (che rilegge e riordina per posizione)
+        ToDo otherTodo = todoList.get(newIndex);
+
+        int oldPos = todo.getPosizione();
+        int otherPos = otherTodo.getPosizione();
+
+        todo.setPosizione(otherPos);
+        otherTodo.setPosizione(oldPos);
+
         refreshMainFrameToDos();
     }
 
@@ -347,7 +346,7 @@ public class ToDoController {
 
         Utente u1 = new Utente(123, "Marianna", "marianna", "stress");
 
-        Bacheca uni = new Bacheca(1, TitoloBacheca.UNIVERSITA, "Organizzazione per l'università");
+        Bacheca uni = new Bacheca(1, TitoloBacheca.UNIVERSITA, "Organizzazione per l'università", 123);
         ToDo todo1 = new ToDo(14, "Studiare Java", "Studiare capitolo 7 + esercizi", LocalDate.parse("2025-06-08"), "path/to/image.png", "https://url.com", "#FFFFFF", 1, u1);
         todo1.setStato(StatoToDo.NON_COMPLETATO);
         Checklist checklist1 = new Checklist();
@@ -360,12 +359,12 @@ public class ToDoController {
         todo2.setStato(StatoToDo.NON_COMPLETATO);
         uni.aggiungiToDo(todo1);
 
-        Bacheca tempo = new Bacheca(2, TitoloBacheca.TEMPO_LIBERO, "Organizzazione degli hobby");
+        Bacheca tempo = new Bacheca(2, TitoloBacheca.TEMPO_LIBERO, "Organizzazione degli hobby", 123);
         ToDo todo3 = new ToDo(32, "Leggere libro", "Guida galattica per autostoppisti, pagina 42", null, "path/to/image.png", "https://url.com", "#FFFFFF", 3, u1);
         todo3.setStato(StatoToDo.NON_COMPLETATO);
         tempo.aggiungiToDo(todo3);
 
-        Bacheca lavoro = new Bacheca(3, TitoloBacheca.LAVORO, "Organizazzione giornata lavorativa");
+        Bacheca lavoro = new Bacheca(3, TitoloBacheca.LAVORO, "Organizazzione giornata lavorativa", 123);
         ToDo todo4 = new ToDo(45, "Inviare report", "Report finale", LocalDate.parse("2025-05-31"), "path/to/image.png", "https.//url.com", "#FFFFFF", 4, u1);
         todo4.setStato(StatoToDo.NON_COMPLETATO);
         lavoro.aggiungiToDo(todo4);
@@ -376,8 +375,8 @@ public class ToDoController {
 
         lista.add(u1);
         Utente u2 = new Utente(124, "Antonietta", "anto", "pass");
-        Bacheca uniAnto = new Bacheca(4, TitoloBacheca.UNIVERSITA, "Organizzazione universitaria di Marco");
-        Bacheca tempoAnto = new Bacheca(5, TitoloBacheca.TEMPO_LIBERO, "Hobby di Marco");
+        Bacheca uniAnto = new Bacheca(4, TitoloBacheca.UNIVERSITA, "Organizzazione universitaria di Marco", 124);
+        Bacheca tempoAnto = new Bacheca(5, TitoloBacheca.TEMPO_LIBERO, "Hobby di Marco", 124);
         u2.aggiungiBacheca(uniAnto);
         u2.aggiungiBacheca(tempoAnto);
 
@@ -415,7 +414,7 @@ public class ToDoController {
             int newId = utenteCorrente.getBacheche().size()+100;
             String desc = JOptionPane.showInputDialog(mainFrame, "Inserisci una descrizione per la bacheca " + titoloScelto.name() + ":");
 
-            Bacheca nuovaBacheca = new Bacheca(newId, titoloScelto, (desc != null ? desc : ""));
+            Bacheca nuovaBacheca = new Bacheca(newId, titoloScelto, (desc != null ? desc : ""), utenteCorrente.getId());
             utenteCorrente.aggiungiBacheca(nuovaBacheca);
 
             refreshMainFrameToDos();

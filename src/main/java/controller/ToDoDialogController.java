@@ -8,9 +8,11 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
+
 public class ToDoDialogController {
     private ToDoController mainController;
     private ToDoDialog toDoDialog;
+
 
     public ToDoDialogController(ToDoController mainController) {
         this.mainController = mainController;
@@ -19,18 +21,35 @@ public class ToDoDialogController {
 
     public void openAddToDoDialog() {
         toDoDialog = new ToDoDialog(null, "Aggiungi ToDo", true);
-        toDoDialog.clearForm(); // Pulisce il form per un nuovo inserimento
+        toDoDialog.clearForm();
 
         // Listener per il pulsante Salva
         toDoDialog.getBtnSalva().addActionListener(e -> {
             try {
-                // Recupera i dati dal dialogo
+
                 String titolo = toDoDialog.getTxtTitolo().getText();
-                String descrizione = toDoDialog.getTxtDescrizione().getText();
-                LocalDate scadenza = null;
-                if (!toDoDialog.getTxtScadenza().getText().isEmpty()) {
-                    scadenza = LocalDate.parse(toDoDialog.getTxtScadenza().getText());
+                String scadenzaText = toDoDialog.getTxtScadenza().getText();
+
+                if (titolo == null || titolo.trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(toDoDialog, "Il campo 'Titolo (*)' è obbligatorio.", "Errore di Validazione", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
+
+                if (scadenzaText == null || scadenzaText.trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(toDoDialog, "Il campo 'Scadenza (*)' è obbligatorio.", "Errore di Validazione", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                LocalDate scadenza;
+                try {
+                    scadenza = LocalDate.parse(scadenzaText);
+                } catch (DateTimeParseException ex) {
+                    JOptionPane.showMessageDialog(toDoDialog, "Formato data scadenza non valido. Usa YYYY-MM-DD.", "Errore Formato Data", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+
+                String descrizione = toDoDialog.getTxtDescrizione().getText();
                 String imagePath = toDoDialog.getImagePath();
                 String url = toDoDialog.getTxtURL().getText();
                 String coloreSfondo = toDoDialog.getColoreSfondo();
@@ -100,11 +119,32 @@ public class ToDoDialogController {
             }
         }
 
+
         // Listener per il pulsante Salva
         toDoDialog.getBtnSalva().addActionListener(e -> {
             try {
-                // Aggiorna l'oggetto ToDoToEdit con i nuovi dati dal dialogo
-                toDoToEdit.setTitolo(toDoDialog.getTxtTitolo().getText());
+
+                String titolo = toDoDialog.getTxtTitolo().getText();
+                String scadenzaText = toDoDialog.getTxtScadenza().getText();
+                if (titolo == null || titolo.trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(toDoDialog, "Il campo 'Titolo (*)' è obbligatorio.", "Errore di Validazione", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                if (scadenzaText == null || scadenzaText.trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(toDoDialog, "Il campo 'Scadenza (*)' è obbligatorio.", "Errore di Validazione", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                LocalDate scadenza;
+                try {
+                    scadenza = LocalDate.parse(scadenzaText);
+                } catch (DateTimeParseException ex) {
+                    JOptionPane.showMessageDialog(toDoDialog, "Formato data scadenza non valido. Usa YYYY-MM-DD.", "Errore Formato Data", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                toDoToEdit.setTitolo(titolo);
+
                 toDoToEdit.setDescrizione(toDoDialog.getTxtDescrizione().getText());
                 if (!toDoDialog.getTxtScadenza().getText().isEmpty()) {
                     toDoToEdit.setScadenza(LocalDate.parse(toDoDialog.getTxtScadenza().getText()));

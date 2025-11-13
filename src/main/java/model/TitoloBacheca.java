@@ -18,4 +18,15 @@ public enum TitoloBacheca {
     public String getNomeVisibile() {
         return nomeVisibile;
     }
+
+    public static TitoloBacheca fromString(String text) {
+        if (text != null) {
+            for (TitoloBacheca b : TitoloBacheca.values()) {
+                if (text.equalsIgnoreCase(b.name())) {
+                    return b;
+                }
+            }
+        }
+        return null;
+    }
 }

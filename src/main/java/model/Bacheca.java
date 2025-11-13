@@ -11,13 +11,15 @@ public class Bacheca {
 
     private Utente proprietario;
 
-    //creiamo il costruttore
+    private int idUtente;
 
-    public Bacheca(int id, TitoloBacheca titolo, String descrizione) {
+
+    public Bacheca(int id, TitoloBacheca titolo, String descrizione, int idUtente) {
         this.id = id;
         this.titolo = titolo;
         this.descrizione = descrizione;
         this.toDoList = new ArrayList<>();
+        this.idUtente = idUtente;
     }
 
     public int getId() {
@@ -63,5 +65,15 @@ public class Bacheca {
 
     public void setProprietario(Utente proprietario) {
         this.proprietario = proprietario;
+        if (proprietario != null) {
+            this.idUtente = proprietario.getId();
+        }
+    }
+    public int getIdUtente() {
+        return idUtente;
+    }
+
+    public void setIdUtente(int idUtente) {
+        this.idUtente = idUtente;
     }
 }

@@ -16,6 +16,10 @@ public class LoginFrame extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new GridBagLayout());
 
+        JLabel welcomeLabel = new JLabel("Benvenuto!");
+        welcomeLabel.setForeground(new Color(6, 0, 64));
+        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+
         JLabel userLabel = new JLabel("Username:");
         JLabel passLabel = new JLabel("Password:");
         userField = new JTextField(15);

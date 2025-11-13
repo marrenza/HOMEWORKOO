@@ -114,7 +114,7 @@ public class ToDoDialog extends JDialog {
         int row = 0;
 
         // Titolo
-        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Titolo:"), gbc);
+        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Titolo (*):"), gbc);
         gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; formPanel.add(txtTitolo, gbc);
 
         // Descrizione
@@ -122,7 +122,7 @@ public class ToDoDialog extends JDialog {
         gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; formPanel.add(new JScrollPane(txtDescrizione), gbc);
 
         // Scadenza
-        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Scadenza (YYYY-MM-DD):"), gbc);
+        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Scadenza (YYYY-MM-DD) (*):"), gbc);
         gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; formPanel.add(txtScadenza, gbc);
 
         // Immagine Path

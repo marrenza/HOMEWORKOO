@@ -21,6 +21,9 @@ public class ToDo {
 
     private Utente autore;
 
+    private int idAutore;
+    private int idBacheca;
+
     private List<Condivisione> condivisioni;
 
     //costruttore
@@ -36,6 +39,9 @@ public class ToDo {
         this.posizione = posizione;
         this.stato = StatoToDo.NON_COMPLETATO;
         this.autore = autore;
+        if (autore != null) {
+            this.idAutore = autore.getId();
+        }
     }
 
     public int getId() {
@@ -116,6 +122,9 @@ public class ToDo {
 
     public void setBacheca(Bacheca bacheca) {
         this.bacheca = bacheca;
+        if (bacheca != null) {
+            this.idBacheca = bacheca.getId();
+        }
     }
 
     public List<Condivisione> getCondivisioni() {
@@ -139,6 +148,22 @@ public class ToDo {
     }
     public void setAutore(Utente autore) {
         this.autore = autore;
+        if (autore != null) {
+            this.idAutore = autore.getId();
+        }
+    }
+
+    public int getIdAutore() {
+        return idAutore;
+    }
+    public void setIdAutore(int idAutore) {
+        this.idAutore = idAutore;
+    }
+    public int getIdBacheca() {
+        return idBacheca;
+    }
+    public void setIdBacheca(int idBacheca) {
+        this.idBacheca = idBacheca;
     }
 
 
