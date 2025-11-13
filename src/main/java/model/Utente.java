@@ -18,6 +18,13 @@ public class Utente {
         this.password = password;
     }
 
+    public Utente(String nome, String login, String password) {
+        this.id = 0;
+        this.nome = nome;
+        this.login = login;
+        this.password = password;
+    }
+
     public int getId() {
         return id;
     }

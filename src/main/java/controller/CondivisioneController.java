@@ -9,27 +9,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
+import java.util.logging.Logger;
 
 public class CondivisioneController {
     private ToDoController mainController;
     private ShareDialog shareDialog;
 
+    private static final Logger logger = Logger.getLogger(CondivisioneController.class.getName());
+
     public CondivisioneController(ToDoController mainController) {
         this.mainController = mainController;
     }
 
-    /**
-     * Apre il dialogo di condivisione per un ToDo specifico.
-     * Permette di selezionare altri utenti con cui condividere il ToDo.
-     * @param toDoToShare Il ToDo che si desidera condividere.
-     */
     public void openShareToDoDialog(ToDo toDoToShare) {
-        // Ottieni tutti gli utenti registrati tranne l'utente corrente
         List<Utente> otherUsers = mainController.getUtentiRegistrati().stream()
                 .filter(u -> u.getId() != mainController.getUtenteCorrente().getId())
                 .collect(Collectors.toList());
 
-        // Crea e mostra il dialogo di condivisione
         shareDialog = new ShareDialog(null, "Condividi ToDo: " + toDoToShare.getTitolo(), true, otherUsers);
         shareDialog.getBtnCondividi().addActionListener(e -> {
             List<Utente> selectedUsers = shareDialog.getSelectedUsers();
@@ -42,60 +38,26 @@ public class CondivisioneController {
             }
             shareDialog.dispose();
             JOptionPane.showMessageDialog(shareDialog, "ToDo condiviso con successo!");
-            mainController.refreshMainFrameToDos(); // Aggiorna la UI del proprietario
         });
         shareDialog.setVisible(true);
     }
 
-    /**
-     * Condivide un ToDo con un utente specifico.
-     * Il ToDo condiviso apparirà nella bacheca corrispondente dell'utente target.
-     * @param toDoToShare Il ToDo da condividere.
-     * @param targetUser L'utente con cui condividere il ToDo.
-     */
     private void shareToDoWithUser(ToDo toDoToShare, Utente targetUser) {
-        // Evita condivisioni duplicate
-        if (toDoToShare.getCondivisioni() != null) {
+        if(toDoToShare.getCondivisioni() != null) {
             boolean alreadyShared = toDoToShare.getCondivisioni().stream()
-                    .anyMatch(c -> c.getUtente().getId() == targetUser.getId());
+                    .anyMatch(c -> c.getUtente() != null && c.getUtente().getId() == targetUser.getId());
             if (alreadyShared) {
-                JOptionPane.showMessageDialog(shareDialog, "Il ToDo è già condiviso con " + targetUser.getNome() + ".", "Già Condiviso", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
-        } else {
-            toDoToShare.setCondivisioni(new ArrayList<>()); // Inizializza se null
         }
+        Condivisione condivisione = new Condivisione(targetUser.getId(), toDoToShare.getId());
+        mainController.getCondivisioneDAO().addCondivisione(condivisione);
+        condivisione.setUtente(targetUser);
+        condivisione.setToDo(toDoToShare);
+        toDoToShare.aggiungiCondivisione(condivisione);
 
-        // Crea l'oggetto Condivisione
-        Condivisione condivisione = new Condivisione(targetUser, toDoToShare);
-        toDoToShare.aggiungiCondivisione(condivisione); // Aggiungi al ToDo originale
-        targetUser.aggiungiCondivisione(condivisione); // Aggiungi alla lista delle condivisioni dell'utente target
-
-        // Aggiungi il ToDo condiviso alla bacheca corrispondente dell'utente target
-        TitoloBacheca originalBachecaTitle = toDoToShare.getBacheca().getTitolo();
-        boolean addedToTargetBacheca = false;
-        for (model.Bacheca b : targetUser.getBacheche()) {
-            if (b.getTitolo() == originalBachecaTitle) {
-                // Controlla se il ToDo è già nella bacheca target per evitare duplicati visivi
-                if (!b.getToDoList().contains(toDoToShare)) {
-                    b.aggiungiToDo(toDoToShare); // Aggiungi il ToDo alla bacheca dell'utente target
-                }
-                addedToTargetBacheca = true;
-                break;
-            }
-        }
-
-        if (!addedToTargetBacheca) {
-            // Questo caso si verifica se l'utente target non ha una bacheca con lo stesso titolo.
-            // In un sistema reale si potrebbe creare la bacheca o notificare l'utente.
-            JOptionPane.showMessageDialog(shareDialog, "L'utente " + targetUser.getNome() + " non ha una bacheca di tipo " + originalBachecaTitle + ". Il ToDo non è stato aggiunto alla sua bacheca.", "Attenzione", JOptionPane.WARNING_MESSAGE);
-        }
     }
 
-    /**
-     * Mostra un dialogo con la lista degli utenti con cui un ToDo è condiviso.
-     * @param toDo Il ToDo di cui visualizzare le condivisioni.
-     */
     public void showSharedUsers(ToDo toDo) {
         if (toDo.getCondivisioni() == null || toDo.getCondivisioni().isEmpty()) {
             JOptionPane.showMessageDialog(null, "Questo ToDo non è condiviso con nessun altro utente.", "Condivisioni", JOptionPane.INFORMATION_MESSAGE);
@@ -109,33 +71,28 @@ public class CondivisioneController {
         JOptionPane.showMessageDialog(null, sb.toString(), "Condivisioni ToDo", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    /**
-     * Rimuove la condivisione di un ToDo con un utente specifico.
-     * @param toDo Il ToDo da cui rimuovere la condivisione.
-     * @param userToRemove L'utente da cui rimuovere la condivisione.
-     */
     public void removeSharing(ToDo toDo, Utente userToRemove) {
-        // Rimuovi la condivisione dal ToDo originale
+        Condivisione condivisioneDaRimuovere = null;
         if (toDo.getCondivisioni() != null) {
-            toDo.getCondivisioni().removeIf(c -> c.getUtente().getId() == userToRemove.getId());
-        }
-        // Rimuovi la condivisione dalla lista delle condivisioni dell'utente target
-        if (userToRemove.getCondivisioni() != null) {
-            userToRemove.getCondivisioni().removeIf(c -> c.getToDo().getId() == toDo.getId());
-        }
-        // Rimuovi il ToDo dalla bacheca dell'utente target
-        TitoloBacheca originalBachecaTitle = toDo.getBacheca().getTitolo();
-        for (model.Bacheca b : userToRemove.getBacheche()) {
-            if (b.getTitolo() == originalBachecaTitle) {
-                b.getToDoList().remove(toDo);
-                break;
+            for (Condivisione c : toDo.getCondivisioni()) {
+                if (c.getUtente() != null && c.getUtente().getId() == userToRemove.getId()) {
+                    condivisioneDaRimuovere = c;
+                    break;
+                }
             }
         }
-        // Se l'utente corrente è quello da cui è stata rimossa la condivisione, aggiorna la sua UI
+        if (condivisioneDaRimuovere == null) {
+            logger.warning("Tentativo di rimuovere una condivisione non trovata.");
+            return;
+        }
+
+        mainController.getCondivisioneDAO().deleteCondivisione(condivisioneDaRimuovere);
+        toDo.rimuoviCondivisione(condivisioneDaRimuovere);
+
         if (mainController.getUtenteCorrente().getId() == userToRemove.getId()) {
+            mainController.caricaDatiUtente(mainController.getUtenteCorrente());
             mainController.refreshMainFrameToDos();
         }
-        JOptionPane.showMessageDialog(null, "Condivisione rimossa.");
     }
 
     public void openManageSharingDialog(ToDo todo) {
@@ -144,15 +101,12 @@ public class CondivisioneController {
             return;
         }
 
-        // Prendi la lista di utenti con cui è condiviso
         List<Utente> sharedUsers = todo.getCondivisioni().stream()
                 .map(Condivisione::getUtente)
                 .collect(Collectors.toList());
 
-        // Crea un array di nomi per il dialogo
         String[] userNames = sharedUsers.stream().map(Utente::getNome).toArray(String[]::new);
 
-        // Mostra un JComboBox in un JOptionPane per far scegliere all'utente
         String userToManage = (String) JOptionPane.showInputDialog(
                 null,
                 "Seleziona un utente da rimuovere:",
@@ -163,9 +117,8 @@ public class CondivisioneController {
                 userNames[0]
         );
 
-        if (userToManage == null) return; // L'utente ha premuto "Annulla"
+        if (userToManage == null) return;
 
-        // Trova l'oggetto Utente selezionato
         Utente utenteSelezionato = sharedUsers.stream()
                 .filter(u -> u.getNome().equals(userToManage))
                 .findFirst().orElse(null);
@@ -179,7 +132,6 @@ public class CondivisioneController {
             );
 
             if (confirm == JOptionPane.YES_OPTION) {
-                // Usa il tuo metodo (già esistente) per rimuovere la condivisione!
                 removeSharing(todo, utenteSelezionato);
                 JOptionPane.showMessageDialog(null, "Condivisione con " + utenteSelezionato.getNome() + " rimossa.");
             }

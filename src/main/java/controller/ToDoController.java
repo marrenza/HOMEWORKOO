@@ -2,6 +2,9 @@ package controller;
 
 import gui.*;
 import model.*;
+import database.DatabaseConnection;
+import dao.*;
+import dao.postgresimpl.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,22 +13,45 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.sql.Connection;
+import java.sql.SQLException;
+
+import gui.RegistrazioneDialog;
+import model.TitoloBacheca;
 
 public class ToDoController {
     private LoginFrame loginFrame;
     private MainFrame mainFrame;
     private Utente utenteCorrente;
 
-    //controller specializzati
     private ToDoDialogController toDoDialogController;
     private RicercaController ricercaController;
     private CondivisioneController condivisioneController;
 
-    //demo lista utenti con bacheche e to do
-    private List<Utente> utentiRegistrati;
+    private Connection connection;
+    private UtenteDAO utenteDAO;
+    private BachecaDAO bachecaDAO;
+    private ToDoDAO toDoDAO;
+    private AttivitaDAO attivitaDAO;
+    private CondivisioneDAO condivisioneDAO;
 
     public ToDoController(){
-        utentiRegistrati = creaUtentiDemo();
+        try {
+            this.connection = DatabaseConnection.getConnection();
+            if (this.connection == null) {
+                throw new SQLException("Connessione fallita!");
+            }
+
+            this.utenteDAO = new PostgresUtenteDAO(this.connection);
+            this.bachecaDAO = new PostgresBachecaDAO(this.connection);
+            this.attivitaDAO = new PostgresAttivitaDAO(this.connection);
+            this.condivisioneDAO = new PostgresCondivisioneDAO(this.connection);
+            this.toDoDAO = new PostgresToDoDAO(this.connection, this.utenteDAO, this.attivitaDAO, this.condivisioneDAO);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Errore fatale di connessione al Database.\n" + e.getMessage(), "Errore DB", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
         toDoDialogController = new ToDoDialogController(this);
         ricercaController = new RicercaController(this);
         condivisioneController = new CondivisioneController(this);
@@ -34,31 +60,81 @@ public class ToDoController {
 
     private void initLogin(){
         loginFrame = new LoginFrame();
-        loginFrame.getLoginButton().addActionListener(e->{
+
+        loginFrame.getLoginButton().addActionListener(e -> {
             String username = loginFrame.getUserField().getText();
             String password = new String(loginFrame.getPassField().getPassword());
-
-            Utente utente = autenticaUtente(username, password);
-            if(utente != null) {
+            Utente utente = utenteDAO.getUtenteByLogin(username);
+            if(utente != null && utente.getPassword().equals(password)) {
                 utenteCorrente = utente;
+                caricaDatiUtente(utenteCorrente);
                 apriMainFrame(utente);
                 loginFrame.dispose();
             } else {
                 JOptionPane.showMessageDialog(loginFrame, "Credenziali errate", "Errore login", JOptionPane.ERROR_MESSAGE);
-
             }
+        });
+        loginFrame.getRegisterButton().addActionListener(e -> {
+            openRegistrazioneDialog();
         });
 
         loginFrame.setVisible(true);
     }
 
-    private Utente autenticaUtente(String username, String password) {
-        for(Utente u : utentiRegistrati){
-            if(u.getLogin().equals(username) && u.getPassword().equals(password)) {
-                return u;
+    private void openRegistrazioneDialog() {
+        RegistrazioneDialog dialog = new RegistrazioneDialog(loginFrame);
+
+        dialog.getBtnConferma().addActionListener(e -> {
+            String nome = dialog.getNome();
+            String login = dialog.getLogin();
+            String pass = dialog.getPassword();
+            String confermaPass = dialog.getConfermaPassword();
+
+            if (nome.trim().isEmpty() || login.trim().isEmpty() || pass.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Tutti i campi sono obbligatori.", "Errore", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (!pass.equals(confermaPass)) {
+                JOptionPane.showMessageDialog(dialog, "Le password non coincidono.", "Errore", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (utenteDAO.getUtenteByLogin(login) != null) {
+                JOptionPane.showMessageDialog(dialog, "Questo login è già in uso. Scegline un altro.", "Errore", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            try {
+                Utente nuovoUtente = new Utente(nome, login, pass);
+                utenteDAO.addUtente(nuovoUtente);
+                Bacheca uni = new Bacheca(0, TitoloBacheca.UNIVERSITA, "Attività universitarie", nuovoUtente.getId());
+                Bacheca lavoro = new Bacheca(0, TitoloBacheca.LAVORO, "Attività lavorative", nuovoUtente.getId());
+                Bacheca tempo = new Bacheca(0, TitoloBacheca.TEMPO_LIBERO, "Hobby e tempo libero", nuovoUtente.getId());
+                bachecaDAO.addBacheca(uni);
+                bachecaDAO.addBacheca(lavoro);
+                bachecaDAO.addBacheca(tempo);
+                JOptionPane.showMessageDialog(dialog, "Registrazione completata! Ora puoi effettuare il login.", "Successo", JOptionPane.INFORMATION_MESSAGE);
+                dialog.dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Errore durante il salvataggio nel database.", "Errore DB", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
+        });
+        dialog.setVisible(true);
+    }
+
+    public void caricaDatiUtente(Utente utente) {
+        List<Bacheca> bacheche = bachecaDAO.getBachecaByUserId(utente.getId());
+        for (Bacheca b : bacheche) {
+            b.setProprietario(utente);
+            List<ToDo> todos = toDoDAO.getToDosForBachecaAndUtente(b.getId(), utente.getId());
+            b.setToDoList(todos);
+            for (ToDo t : todos) {
+                t.setBacheca(b);
             }
         }
-        return null;
+        utente.getBacheche().clear();
+        utente.getBacheche().addAll(bacheche);
     }
 
     private void apriMainFrame(Utente utente) {
@@ -199,13 +275,10 @@ public class ToDoController {
 
     private void spostaToDo(ToDo todo, int direzione) {
         Bacheca bacheca = todo.getBacheca();
-        if (bacheca == null) return;
+        if(bacheca == null) return;
 
+        bacheca.getToDoList().sort((t1, t2) -> Integer.compare(t1.getPosizione(), t2.getPosizione()));
         List<ToDo> todoList = bacheca.getToDoList();
-
-        todoList.sort((t1, t2) -> Integer.compare(t1.getPosizione(), t2.getPosizione()));
-
-        // Usiamo la posizione salvata nel ToDo come indice
         int currentIndex = -1;
         for (int i = 0; i < todoList.size(); i++) {
             if (todoList.get(i).getId() == todo.getId()) {
@@ -213,19 +286,31 @@ public class ToDoController {
                 break;
             }
         }
-        if(currentIndex == -1) return;
-
-        int newIndex =  currentIndex + direzione;
-
-        if(newIndex < 0 || newIndex >= todoList.size()) return;
+        if (currentIndex == -1) {
+            System.err.println("Errore: ToDo non trovato nella lista ordinata.");
+            return;
+        }
+        int newIndex = currentIndex + direzione;
+        if (newIndex < 0 || newIndex >= todoList.size()) {
+            System.err.println("Errore: Spostamento fuori dai limiti.");
+            return;
+        }
 
         ToDo otherTodo = todoList.get(newIndex);
 
         int oldPos = todo.getPosizione();
         int otherPos = otherTodo.getPosizione();
 
+        if (oldPos == otherPos) {
+            oldPos = currentIndex;
+            otherPos = newIndex;
+        }
+
         todo.setPosizione(otherPos);
         otherTodo.setPosizione(oldPos);
+
+        toDoDAO.updateToDo(todo);
+        toDoDAO.updateToDo(otherTodo);
 
         refreshMainFrameToDos();
     }
@@ -234,162 +319,117 @@ public class ToDoController {
         if (isCompleted) {
             todo.setStato(StatoToDo.COMPLETATO);
         } else {
-                todo.setStato(StatoToDo.NON_COMPLETATO);
-            }
-
-
-
-            refreshMainFrameToDos(); // Aggiorna la UI per riflettere il cambio di stato
+            todo.setStato(StatoToDo.NON_COMPLETATO);
         }
+        toDoDAO.updateToDo(todo);
+        refreshMainFrameToDos();
+    }
 
-        public void addToDoToBacheca(ToDo todo, TitoloBacheca bachecaTitle) {
-            Bacheca targetBacheca = null;
-            for (Bacheca b : utenteCorrente.getBacheche()) {
-                if (b.getTitolo() == bachecaTitle) {
-                    targetBacheca = b;
-                    break;
-                }
-            }
-            if (targetBacheca != null) {
-                targetBacheca.aggiungiToDo(todo);
-                refreshMainFrameToDos();
-                JOptionPane.showMessageDialog(mainFrame, "ToDo aggiunto con successo!");
-            } else {
-                JOptionPane.showMessageDialog(mainFrame, "Bacheca non trovata per il titolo: " + bachecaTitle, "Errore", JOptionPane.ERROR_MESSAGE);
+    public void addToDoToBacheca(ToDo todo, TitoloBacheca bachecaTitle) {
+        Bacheca targetBacheca = null;
+        for (Bacheca b : utenteCorrente.getBacheche()) {
+            if (b.getTitolo() == bachecaTitle) {
+                targetBacheca = b;
+                break;
             }
         }
-
-        public void updateToDoInBacheca(ToDo updatedToDo) {
+        if (targetBacheca != null) {
+            targetBacheca.aggiungiToDo(todo);
+            todo.setBacheca(targetBacheca);
+            toDoDAO.addToDo(todo);
             refreshMainFrameToDos();
-            JOptionPane.showMessageDialog(mainFrame, "ToDo modificato con successo!");
-        }
-
-        public void deleteToDo(ToDo todo) {
-            int confirm = JOptionPane.showConfirmDialog(mainFrame, "Sei sicuro di voler eliminare questo ToDo?", "Conferma Eliminazione", JOptionPane.YES_NO_OPTION);
-            if(confirm == JOptionPane.YES_OPTION) {
-                boolean removed = false;
-                for(Bacheca b : utenteCorrente.getBacheche()) {
-                    if(b.getToDoList().remove(todo)) {
-                        removed = true;
-                        break;
-                    }
-                }
-
-                for(Utente u : utentiRegistrati) {
-                    if(u.getCondivisioni() != null) {
-                        u.getCondivisioni().removeIf(c -> c.getToDo().getId() == todo.getId());
-                    }
-                    for(Bacheca b : u.getBacheche()) {
-                        b.getToDoList().removeIf(t -> t.getId() == todo.getId());
-                    }
-                }
-
-                if(removed) {
-                    refreshMainFrameToDos();
-                    JOptionPane.showMessageDialog(mainFrame, "ToDo eliminato con successo.");
-                } else {
-                    JOptionPane.showMessageDialog(mainFrame, "Errore nella cancellazione del ToDo.", "Errore", JOptionPane.ERROR_MESSAGE);
+            if (todo.getChecklist() != null) {
+                for (Attivita a : todo.getChecklist().getAttivita()) {
+                    a.setIdTodo(todo.getId());
+                    attivitaDAO.addAttivita(a);
                 }
             }
+            JOptionPane.showMessageDialog(mainFrame, "ToDo aggiunto con successo!");
+        } else {
+            JOptionPane.showMessageDialog(mainFrame, "Bacheca non trovata per il titolo: " + bachecaTitle, "Errore", JOptionPane.ERROR_MESSAGE);
         }
-        private void openMoveToDoDialog(ToDo todo) {
-            TitoloBacheca[] bachecaTitoli = TitoloBacheca.values();
-            TitoloBacheca selectedTitle = (TitoloBacheca) JOptionPane.showInputDialog(
-                    mainFrame, "Seleziona la bacheca di destinazione: ",
-                    "Sposta ToDo", JOptionPane.QUESTION_MESSAGE, null,
-                    bachecaTitoli,
-                    todo.getBacheca() != null ? todo.getBacheca().getTitolo() : bachecaTitoli[0]
-            );
-            if(selectedTitle != null) {
-                moveToDo(todo, selectedTitle);
+    }
+
+    public void updateToDoInBacheca(ToDo updatedToDo) {
+        toDoDAO.updateToDo(updatedToDo);
+        refreshMainFrameToDos();
+        attivitaDAO.deleteAttivitaByToDoId(updatedToDo.getId());
+        if (updatedToDo.getChecklist() != null) {
+            for (Attivita a : updatedToDo.getChecklist().getAttivita()) {
+                a.setIdTodo(updatedToDo.getId());
+                attivitaDAO.addAttivita(a);
             }
         }
+        JOptionPane.showMessageDialog(mainFrame, "ToDo modificato con successo!");
+    }
 
-        public void moveToDo(ToDo todo, TitoloBacheca targetTitoloBacheca) {
-            Bacheca sourceBacheca = todo.getBacheca();
-            if(sourceBacheca != null) {
-                sourceBacheca.getToDoList().remove(todo);
-            }
-
-            Bacheca targetBacheca = null;
+    public void deleteToDo(ToDo todo) {
+        int confirm = JOptionPane.showConfirmDialog(mainFrame, "Sei sicuro di voler eliminare questo ToDo?", "Conferma Eliminazione", JOptionPane.YES_NO_OPTION);
+        if(confirm == JOptionPane.YES_OPTION) {
+            toDoDAO.deleteToDo(todo.getId());
+            boolean removed = false;
             for(Bacheca b : utenteCorrente.getBacheche()) {
-                if(b.getTitolo() == targetTitoloBacheca) {
-                    targetBacheca = b;
+                if(b.getToDoList().remove(todo)) {
+                    removed = true;
                     break;
                 }
             }
-
-            if (targetBacheca != null) {
-                targetBacheca.aggiungiToDo(todo); // Aggiungi il ToDo alla nuova bacheca
-                todo.setBacheca(targetBacheca); // Aggiorna il riferimento alla bacheca nel ToDo
-                refreshMainFrameToDos(); // Aggiorna la UI
-                JOptionPane.showMessageDialog(mainFrame, "ToDo spostato con successo.");
+            if(removed) {
+                refreshMainFrameToDos();
+                JOptionPane.showMessageDialog(mainFrame, "ToDo eliminato con successo.");
             } else {
-                JOptionPane.showMessageDialog(mainFrame, "Errore: Bacheca di destinazione non trovata.", "Errore", JOptionPane.ERROR_MESSAGE);
-                // Se lo spostamento fallisce, ripristina il ToDo nella bacheca originale
-                if (sourceBacheca != null) {
-                    sourceBacheca.aggiungiToDo(todo);
-                }
+                JOptionPane.showMessageDialog(mainFrame, "Errore nella cancellazione del ToDo.", "Errore", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void openMoveToDoDialog(ToDo todo) {
+        TitoloBacheca[] bachecaTitoli = TitoloBacheca.values();
+        TitoloBacheca selectedTitle = (TitoloBacheca) JOptionPane.showInputDialog(
+                mainFrame, "Seleziona la bacheca di destinazione: ",
+                "Sposta ToDo", JOptionPane.QUESTION_MESSAGE, null,
+                bachecaTitoli,
+                todo.getBacheca() != null ? todo.getBacheca().getTitolo() : bachecaTitoli[0]
+        );
+        if (selectedTitle != null) {
+            moveToDo(todo, selectedTitle);
+        }
+    }
+
+    public void moveToDo(ToDo todo, TitoloBacheca targetTitoloBacheca) {
+        Bacheca sourceBacheca = todo.getBacheca();
+        if(sourceBacheca != null) {
+            sourceBacheca.getToDoList().remove(todo);
+        }
+
+        Bacheca targetBacheca = null;
+        for(Bacheca b : utenteCorrente.getBacheche()) {
+            if(b.getTitolo() == targetTitoloBacheca) {
+                targetBacheca = b;
+                break;
             }
         }
 
-        public Utente getUtenteCorrente() {
-            return utenteCorrente;
+        if (targetBacheca != null) {
+            targetBacheca.aggiungiToDo(todo);
+            todo.setBacheca(targetBacheca);
+            toDoDAO.updateToDo(todo);
+            refreshMainFrameToDos();
+            JOptionPane.showMessageDialog(mainFrame, "ToDo spostato con successo.");
+        } else {
+            JOptionPane.showMessageDialog(mainFrame, "Errore: Bacheca di destinazione non trovata.", "Errore", JOptionPane.ERROR_MESSAGE);
+            if (sourceBacheca != null) {
+                sourceBacheca.aggiungiToDo(todo);
+            }
         }
+    }
 
-        public List<Utente> getUtentiRegistrati() {
-            return utentiRegistrati;
-        }
+    public Utente getUtenteCorrente() {
+        return utenteCorrente;
+    }
 
-    private List<Utente> creaUtentiDemo(){
-        List<Utente> lista = new ArrayList<>();
-
-        Utente u1 = new Utente(123, "Marianna", "marianna", "stress");
-
-        Bacheca uni = new Bacheca(1, TitoloBacheca.UNIVERSITA, "Organizzazione per l'università", 123);
-        ToDo todo1 = new ToDo(14, "Studiare Java", "Studiare capitolo 7 + esercizi", LocalDate.parse("2025-06-08"), "path/to/image.png", "https://url.com", "#FFFFFF", 1, u1);
-        todo1.setStato(StatoToDo.NON_COMPLETATO);
-        Checklist checklist1 = new Checklist();
-        checklist1.aggiungiAttivita(new Attivita("Leggere Cap 7"));
-        checklist1.aggiungiAttivita(new Attivita("Fare esercizi"));
-        todo1.setChecklist(checklist1);
-        uni.aggiungiToDo(todo1);
-
-        ToDo todo2 = new ToDo(25, "Esame informatica", "Sede Monte Sant'Angelo",LocalDate.parse("2025-06-15") , "path/to/image.png", "https://url.com", "#FFFFFF", 2, u1);
-        todo2.setStato(StatoToDo.NON_COMPLETATO);
-        uni.aggiungiToDo(todo1);
-
-        Bacheca tempo = new Bacheca(2, TitoloBacheca.TEMPO_LIBERO, "Organizzazione degli hobby", 123);
-        ToDo todo3 = new ToDo(32, "Leggere libro", "Guida galattica per autostoppisti, pagina 42", null, "path/to/image.png", "https://url.com", "#FFFFFF", 3, u1);
-        todo3.setStato(StatoToDo.NON_COMPLETATO);
-        tempo.aggiungiToDo(todo3);
-
-        Bacheca lavoro = new Bacheca(3, TitoloBacheca.LAVORO, "Organizazzione giornata lavorativa", 123);
-        ToDo todo4 = new ToDo(45, "Inviare report", "Report finale", LocalDate.parse("2025-05-31"), "path/to/image.png", "https.//url.com", "#FFFFFF", 4, u1);
-        todo4.setStato(StatoToDo.NON_COMPLETATO);
-        lavoro.aggiungiToDo(todo4);
-
-        u1.aggiungiBacheca(uni);
-        u1.aggiungiBacheca(lavoro);
-        u1.aggiungiBacheca(tempo);
-
-        lista.add(u1);
-        Utente u2 = new Utente(124, "Antonietta", "anto", "pass");
-        Bacheca uniAnto = new Bacheca(4, TitoloBacheca.UNIVERSITA, "Organizzazione universitaria di Marco", 124);
-        Bacheca tempoAnto = new Bacheca(5, TitoloBacheca.TEMPO_LIBERO, "Hobby di Marco", 124);
-        u2.aggiungiBacheca(uniAnto);
-        u2.aggiungiBacheca(tempoAnto);
-
-        Condivisione c1 = new Condivisione(u2, todo1);
-        todo1.aggiungiCondivisione(c1);
-        u2.aggiungiCondivisione(c1);
-
-        boolean todo1InUniAnto = uniAnto.getToDoList().stream().anyMatch(t -> t.getId() == todo1.getId());
-        if (!todo1InUniAnto) {
-            uniAnto.aggiungiToDo(todo1);
-        }
-        lista.add(u2);
-        return lista;
+    public List<Utente> getUtentiRegistrati() {
+        return utenteDAO.getAllUtenti();
     }
 
     private void openCreaBachecaDialog() {
@@ -415,6 +455,7 @@ public class ToDoController {
             String desc = JOptionPane.showInputDialog(mainFrame, "Inserisci una descrizione per la bacheca " + titoloScelto.name() + ":");
 
             Bacheca nuovaBacheca = new Bacheca(newId, titoloScelto, (desc != null ? desc : ""), utenteCorrente.getId());
+            bachecaDAO.addBacheca(nuovaBacheca);
             utenteCorrente.aggiungiBacheca(nuovaBacheca);
 
             refreshMainFrameToDos();
@@ -440,11 +481,25 @@ public class ToDoController {
 
         if(titoloDaEliminare != null) {
             int confirm = JOptionPane.showConfirmDialog(mainFrame,
-                    "Sei sicuro di voler eliminare la bacheca '" + titoloDaEliminare.name() + "'?\n Tutti i ToDo al suo interno saranno persii.",
+                    "Sei sicuro di voler eliminare la bacheca '" + titoloDaEliminare.name() + "'?\n Tutti i ToDo al suo interno saranno persi.", // Ho corretto un refuso
                     "Conferma Eliminazione", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
             if(confirm == JOptionPane.YES_OPTION) {
-                utenteCorrente.getBacheche().removeIf(b -> b.getTitolo() == titoloDaEliminare);
-                refreshMainFrameToDos();
+                Bacheca bachecaDaEliminare = utenteCorrente.getBacheche().stream()
+                        .filter(b -> b.getTitolo() == titoloDaEliminare)
+                        .findFirst()
+                        .orElse(null);
+                if (bachecaDaEliminare != null) {
+                    try {
+                        bachecaDAO.deleteBacheca(bachecaDaEliminare.getId());
+                        utenteCorrente.getBacheche().remove(bachecaDaEliminare);
+                        refreshMainFrameToDos();
+                        JOptionPane.showMessageDialog(mainFrame, "Bacheca eliminata con successo.");
+                    } catch (Exception e) {
+                        JOptionPane.showMessageDialog(mainFrame, "Errore durante l'eliminazione dal database.", "Errore DB", JOptionPane.ERROR_MESSAGE);
+                        e.printStackTrace();
+                    }
+                }
             }
         }
     }
@@ -460,6 +515,7 @@ public class ToDoController {
         );
         if(newDesc != null) {
             bacheca.setDescrizione(newDesc);
+            bachecaDAO.updateBacheca(bacheca);
             panelView.updateDescrizioneLabel();
             JOptionPane.showMessageDialog(mainFrame, "Descrizione aggiornata con successo.");
         }
@@ -521,10 +577,96 @@ public class ToDoController {
 
     private void handleSubTaskCompletionChange(ToDo parentToDo, Attivita subTask, boolean isCompleted) {
         subTask.setStato(isCompleted ? StatoAttivita.COMPLETATO : StatoAttivita.NON_COMPLETATO);
-
+        attivitaDAO.updateAttivita(subTask);
         parentToDo.aggiornaStatoDaChecklist();
 
+        if (parentToDo.getStato() == StatoToDo.COMPLETATO && isCompleted) {
+            toDoDAO.updateToDo(parentToDo);
+        }
         refreshMainFrameToDos();
+    }
+
+    public void aggiornaToDoEsistente(ToDo todo, TitoloBacheca oldBachecaTitolo, TitoloBacheca newBachecaTitolo) {
+        try {
+            if (oldBachecaTitolo != newBachecaTitolo) {
+                utenteCorrente.getBacheche().stream()
+                        .filter(b -> b.getTitolo() == oldBachecaTitolo)
+                        .findFirst().ifPresent(b -> b.getToDoList().remove(todo));
+
+                Bacheca targetBacheca = utenteCorrente.getBacheche().stream()
+                        .filter(b -> b.getTitolo() == newBachecaTitolo)
+                        .findFirst().orElse(null);
+
+                if (targetBacheca != null) {
+                    targetBacheca.aggiungiToDo(todo);
+                    todo.setBacheca(targetBacheca);
+                }
+            }
+            toDoDAO.updateToDo(todo);
+            attivitaDAO.deleteAttivitaByToDoId(todo.getId());
+            if (todo.getChecklist() != null) {
+                for (Attivita a : todo.getChecklist().getAttivita()) {
+                    a.setIdTodo(todo.getId());
+                    attivitaDAO.addAttivita(a);
+                }
+            }
+            refreshMainFrameToDos();
+            JOptionPane.showMessageDialog(mainFrame, "ToDo modificato con successo!");
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(mainFrame, "Errore aggiornamento ToDo.", "Errore DB", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
+
+    public void salvaNuovoToDo(ToDo todo, TitoloBacheca bachecaTitle) {
+        Bacheca targetBacheca = utenteCorrente.getBacheche().stream()
+                .filter(b -> b.getTitolo() == bachecaTitle)
+                .findFirst().orElse(null);
+        if (targetBacheca != null) {
+            try {
+                todo.setBacheca(targetBacheca);
+                int maxPos = targetBacheca.getToDoList().stream()
+                        .mapToInt(ToDo::getPosizione)
+                        .max().orElse(-1);
+                todo.setPosizione(maxPos + 1);
+                toDoDAO.addToDo(todo);
+                if (todo.getChecklist() != null) {
+                    for (Attivita a : todo.getChecklist().getAttivita()) {
+                        a.setIdTodo(todo.getId());
+                        attivitaDAO.addAttivita(a);
+                    }
+                }
+                targetBacheca.aggiungiToDo(todo);
+                refreshMainFrameToDos();
+                JOptionPane.showMessageDialog(mainFrame, "ToDo aggiunto con successo!");
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(mainFrame, "Errore salvataggio nuovo ToDo.", "Errore DB", JOptionPane.ERROR_MESSAGE);
+                e.printStackTrace();
+            }
+        } else {
+            JOptionPane.showMessageDialog(mainFrame, "Bacheca di destinazione non trovata.", "Errore", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public ToDoDAO getToDoDAO() {
+        return toDoDAO;
+    }
+
+    public UtenteDAO getUtenteDAO() {
+        return utenteDAO;
+    }
+
+    public CondivisioneDAO getCondivisioneDAO() {
+        return condivisioneDAO;
+    }
+
+    public AttivitaDAO getAttivitaDAO() {
+        return attivitaDAO;
+    }
+
+    public BachecaDAO getBachecaDAO() {
+        return bachecaDAO;
     }
 }
 

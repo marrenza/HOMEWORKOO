@@ -2,10 +2,10 @@ package dao.postgresimpl;
 
 import dao.ToDoDAO;
 import dao.UtenteDAO;
+import dao.AttivitaDAO;
+import dao.CondivisioneDAO;
 import database.DatabaseConnection;
-import model.StatoToDo;
-import model.ToDo;
-import model.Utente;
+import model.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,10 +13,14 @@ import java.util.Date;
 import java.time.LocalDate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.time.LocalDate;
 
 public class PostgresToDoDAO implements ToDoDAO{
     private final Connection connection;
     private final UtenteDAO utenteDAO;
+    private final AttivitaDAO attivitaDAO;
+    private final CondivisioneDAO condivisioneDAO;
+
     private static final Logger logger = Logger.getLogger(PostgresToDoDAO.class.getName());
     private static final String COL_DESCRIZIONE = "descrizione";
     private static final String COL_COLORE = "colore";
@@ -32,9 +36,11 @@ public class PostgresToDoDAO implements ToDoDAO{
 
 
 
-    public PostgresToDoDAO(Connection connection, UtenteDAO utenteDAO) {
+    public PostgresToDoDAO(Connection connection, UtenteDAO utenteDAO, AttivitaDAO attivitaDAO, CondivisioneDAO condivisioneDAO) {
         this.connection = connection;
         this.utenteDAO = utenteDAO;
+        this.attivitaDAO = attivitaDAO;
+        this.condivisioneDAO = condivisioneDAO;
     }
 
     @Override
@@ -140,19 +146,78 @@ public class PostgresToDoDAO implements ToDoDAO{
     }
 
     @Override
-    public List<ToDo> getToDoByBachecaId(int bachecaId) {
+    public List<ToDo> findToDosByTerm(String searchTerm, int userId) {
         List<ToDo> todos = new ArrayList<>();
-        String sql = "SELECT * FROM todo WHERE " + COL_ID_BACHECA + " = ? ORDER BY posizione ASC";
-
+        String sql = "SELECT t.* FROM todo t " +
+                "LEFT JOIN condivisione c ON t.id = c.id_todo " +
+                "WHERE (t.id_autore = ? OR c.id_utente = ?) " +
+                "AND (LOWER(t.titolo) LIKE ? OR LOWER(t.descrizione) LIKE ?) " +
+                "GROUP BY t.id " +
+                "ORDER BY t.scadenza ASC";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, bachecaId);
-            ResultSet rs = stmt.executeQuery();
+            stmt.setInt(1, userId);
+            stmt.setInt(2, userId);
+            stmt.setString(3, "%" + searchTerm.toLowerCase() + "%"); // Cerca 'searchTerm' ovunque
+            stmt.setString(4, "%" + searchTerm.toLowerCase() + "%");
 
+            ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 todos.add(costruisciToDoDaResultSet(rs));
             }
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Errore getToDoByBachecaId", e);
+            logger.log(Level.SEVERE, "Errore findToDosByTerm", e);
+        }
+        return todos;
+    }
+
+    @Override
+    public List<ToDo> findToDosByScadenza(LocalDate date, int userId) {
+        List<ToDo> todos = new ArrayList<>();
+        String sql = "SELECT t.* FROM todo t " +
+                "LEFT JOIN condivisione c ON t.id = c.id_todo " +
+                "WHERE (t.id_autore = ? OR c.id_utente = ?) " +
+                "AND t.scadenza <= ? " +
+                "GROUP BY t.id " +
+                "ORDER BY t.scadenza ASC";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            stmt.setInt(2, userId);
+            stmt.setDate(3, java.sql.Date.valueOf(date));
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                todos.add(costruisciToDoDaResultSet(rs));
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Errore findToDosByScadenza", e);
+        }
+        return todos;
+    }
+
+    @Override
+    public List<ToDo> findToDosScadenzaOggi(int userId) {
+        return findToDosByScadenza(LocalDate.now(), userId);
+    }
+
+    @Override
+    public List<ToDo> getToDosForBachecaAndUtente(int bachecaId, int utenteId) {
+        List<ToDo> todos = new ArrayList<>();
+        String sql = "SELECT t.* FROM todo t " +
+                "LEFT JOIN condivisione c ON t.id = c.id_todo " +
+                "WHERE t.id_bacheca = ? " +
+                "AND (t.id_autore = ? OR c.id_utente = ?) " +
+                "GROUP BY t.id " +
+                "ORDER BY t.posizione ASC";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, bachecaId);
+            stmt.setInt(2, utenteId);
+            stmt.setInt(3, utenteId);
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                todos.add(costruisciToDoDaResultSet(rs));
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Errore getToDosForBachecaAndUtente", e);
         }
         return todos;
     }
@@ -168,8 +233,6 @@ public class PostgresToDoDAO implements ToDoDAO{
             logger.log(Level.SEVERE, "Errore markAllToDoAsCompleted", e);
         }
     }
-
-
 
     private ToDo costruisciToDoDaResultSet(ResultSet rs) throws SQLException {
         int id = rs.getInt("id");
@@ -191,11 +254,18 @@ public class PostgresToDoDAO implements ToDoDAO{
         todo.setStato(stato);
         todo.setIdBacheca(idBacheca);
 
-        // (Mancano checklist e condivisioni, le caricheremo dopo)
+        List<Attivita> attivitaList = attivitaDAO.getAttivitaByToDoId(id);
+        Checklist checklist = new Checklist();
+        checklist.setAttivita(attivitaList);
+        todo.setChecklist(checklist);
+
+        List<Condivisione> condivisioni = condivisioneDAO.getCondivisioniByToDoId(id);
+        for (Condivisione c : condivisioni) {
+            c.setUtente(utenteDAO.getUtenteById(c.getIdUtente()));
+            c.setToDo(todo);
+        }
+        todo.setCondivisioni(condivisioni);
 
         return todo;
     }
-
-
-
 }
