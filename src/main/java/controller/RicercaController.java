@@ -47,7 +47,6 @@ public class RicercaController {
      * <li><b>Cerca:</b> Esegue la ricerca personalizzata in base ai campi compilati.</li>
      * <li><b>ToDo in Scadenza Oggi:</b> Esegue una ricerca rapida per la data odierna.</li>
      * </ul>
-     * </p>
      */
     public void openSearchDialog() {
         searchDialog = new SearchDialog(null, "Cerca ToDo", true);

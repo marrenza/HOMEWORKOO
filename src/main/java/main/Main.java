@@ -12,6 +12,12 @@ import javax.swing.SwingUtilities;
  */
 public class Main {
     /**
+     * Costruttore privato per nascondere quello pubblico implicito.
+     */
+    private Main() {
+    }
+
+    /**
      * Metodo principale che viene eseguito all'avvio del programma.
      * Utilizza {@link SwingUtilities#invokeLater(Runnable)} per garantire che
      * l'inizializzazione dell'interfaccia grafica (gestita dal {@link ToDoController})

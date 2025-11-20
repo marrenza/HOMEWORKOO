@@ -94,7 +94,6 @@ public interface ToDoDAO {
      * <li>Creati dall'utente (autore), OPPURE</li>
      * <li>Condivisi con l'utente (tramite la tabella condivisione).</li>
      * </ul>
-     * </p>
      *
      * @param bachecaId L'ID della bacheca da visualizzare.
      * @param utenteId  L'ID dell'utente corrente.

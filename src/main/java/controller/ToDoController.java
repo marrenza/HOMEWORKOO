@@ -31,7 +31,6 @@ import model.TitoloBacheca;
  * <li>Coordinamento tra la logica di business e l'aggiornamento dell'interfaccia grafica.</li>
  * <li>Delega di compiti specifici ai sotto-controller (Ricerca, Condivisione, Dialog).</li>
  * </ul>
- * </p>
  *
  * @author marrenza
  * @version 1.0
@@ -754,6 +753,9 @@ public class ToDoController {
 
     /**
      * Metodo di supporto per gestire l'aggiornamento di un ToDo che potrebbe essere stato spostato di bacheca.
+     * @param todo               Il ToDo da aggiornare.
+     * @param oldBachecaTitolo   Il titolo della vecchia bacheca (per gestire lo spostamento).
+     * @param newBachecaTitolo   Il titolo della nuova bacheca.
      */
     public void aggiornaToDoEsistente(ToDo todo, TitoloBacheca oldBachecaTitolo, TitoloBacheca newBachecaTitolo) {
         try {
@@ -790,6 +792,8 @@ public class ToDoController {
 
     /**
      * Metodo di supporto per salvare un ToDo appena creato e assegnargli una posizione corretta.
+     * @param todo         Il nuovo ToDo da salvare.
+     * @param bachecaTitle Il titolo della bacheca in cui inserirlo.
      */
     public void salvaNuovoToDo(ToDo todo, TitoloBacheca bachecaTitle) {
         Bacheca targetBacheca = utenteCorrente.getBacheche().stream()
