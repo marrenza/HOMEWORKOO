@@ -19,22 +19,65 @@ import java.sql.SQLException;
 import gui.RegistrazioneDialog;
 import model.TitoloBacheca;
 
+/**
+ * Controller principale dell'applicazione ToDo Manager.
+ * <p>
+ * Questa classe funge da punto centrale di coordinamento (Orchestrator) secondo il pattern MVC.
+ * Le sue responsabilità includono:
+ * <ul>
+ * <li>Gestione del ciclo di vita dell'applicazione (avvio, login, main frame).</li>
+ * <li>Inizializzazione e gestione della connessione al database e dei DAO.</li>
+ * <li>Gestione dello stato globale (utente corrente).</li>
+ * <li>Coordinamento tra la logica di business e l'aggiornamento dell'interfaccia grafica.</li>
+ * <li>Delega di compiti specifici ai sotto-controller (Ricerca, Condivisione, Dialog).</li>
+ * </ul>
+ * </p>
+ *
+ * @author marrenza
+ * @version 1.0
+ */
 public class ToDoController {
+    /** La finestra di login iniziale dell'applicazione. */
     private LoginFrame loginFrame;
+
+    /** La finestra principale che contiene le bacheche e i ToDo. */
     private MainFrame mainFrame;
+
+    /** L'utente attualmente loggato nel sistema. */
     private Utente utenteCorrente;
 
+    /** Controller delegato alla gestione delle finestre di dialogo per creazione/modifica ToDo. */
     private ToDoDialogController toDoDialogController;
+
+    /** Controller delegato alla gestione della ricerca dei ToDo. */
     private RicercaController ricercaController;
+
+    /** Controller delegato alla gestione della condivisione dei ToDo con altri utenti. */
     private CondivisioneController condivisioneController;
 
+    /** Connessione attiva al database PostgreSQL. */
     private Connection connection;
+
+    /** Data Access Object per le operazioni sulla tabella 'utente'. */
     private UtenteDAO utenteDAO;
+
+    /** Data Access Object per le operazioni sulla tabella 'bacheca'. */
     private BachecaDAO bachecaDAO;
+
+    /** Data Access Object per le operazioni sulla tabella 'todo'. */
     private ToDoDAO toDoDAO;
+
+    /** Data Access Object per le operazioni sulla tabella 'attivita' (checklist). */
     private AttivitaDAO attivitaDAO;
+
+    /** Data Access Object per le operazioni sulla tabella 'condivisione'. */
     private CondivisioneDAO condivisioneDAO;
 
+    /**
+     * Costruttore del controller.
+     * Inizializza la connessione al database, istanzia i DAO e i sotto-controller,
+     * e avvia la procedura di login.
+     */
     public ToDoController(){
         try {
             this.connection = DatabaseConnection.getConnection();
@@ -58,6 +101,10 @@ public class ToDoController {
         initLogin();
     }
 
+    /**
+     * Inizializza e mostra la finestra di login.
+     * Configura i listener per i pulsanti di accesso e registrazione.
+     */
     private void initLogin(){
         loginFrame = new LoginFrame();
 
@@ -81,6 +128,11 @@ public class ToDoController {
         loginFrame.setVisible(true);
     }
 
+    /**
+     * Apre la finestra di dialogo per la registrazione di un nuovo utente.
+     * Gestisce la validazione dell'input e la creazione delle 3 bacheche di default
+     * (Università, Lavoro, Tempo Libero) come richiesto dalle specifiche.
+     */
     private void openRegistrazioneDialog() {
         RegistrazioneDialog dialog = new RegistrazioneDialog(loginFrame);
 
@@ -123,6 +175,14 @@ public class ToDoController {
         dialog.setVisible(true);
     }
 
+    /**
+     * Carica tutti i dati relativi all'utente (Bacheche e ToDo) dal database.
+     * Questo metodo recupera:
+     * 1. Le bacheche di proprietà dell'utente.
+     * 2. I ToDo all'interno di ciascuna bacheca (inclusi quelli condivisi da altri utenti).
+     *
+     * @param utente L'utente di cui caricare i dati.
+     */
     public void caricaDatiUtente(Utente utente) {
         List<Bacheca> bacheche = bachecaDAO.getBachecaByUserId(utente.getId());
         for (Bacheca b : bacheche) {
@@ -137,6 +197,12 @@ public class ToDoController {
         utente.getBacheche().addAll(bacheche);
     }
 
+    /**
+     * Inizializza e visualizza la finestra principale dell'applicazione (MainFrame).
+     * Collega gli ActionListener ai pulsanti della toolbar principale.
+     *
+     * @param utente L'utente loggato.
+     */
     private void apriMainFrame(Utente utente) {
         mainFrame = new MainFrame(utente.getNome());
         mainFrame.getAddToDoButton().addActionListener(e -> toDoDialogController.openAddToDoDialog());
@@ -148,6 +214,12 @@ public class ToDoController {
         mainFrame.setVisible(true);
     }
 
+    /**
+     * Aggiorna la visualizzazione grafica delle bacheche e dei ToDo nel MainFrame.
+     * Questo metodo ricostruisce l'interfaccia utente basandosi sullo stato attuale
+     * del modello dati (`utenteCorrente.getBacheche()`). Ordina i ToDo per posizione,
+     * crea i pannelli grafici e riassegna tutti i listener per l'interazione (click, menu, checkbox).
+     */
     public void refreshMainFrameToDos() {
         JPanel bachechePanel = mainFrame.getBachechePanel();
         bachechePanel.removeAll();
@@ -202,6 +274,15 @@ public class ToDoController {
         bachechePanel.repaint();
     }
 
+    /**
+     * Crea il menu contestuale per un singolo ToDo.
+     * Abilita o disabilita le voci del menu (Modifica, Elimina, Condividi) in base
+     * ai permessi dell'utente corrente (se è l'autore o meno).
+     * Gestisce anche l'abilitazione dei pulsanti di spostamento Su/Giù.
+     *
+     * @param todo Il ToDo per cui creare il menu.
+     * @return Il JPopupMenu configurato.
+     */
     private JPopupMenu createToDoContextMenu(ToDo todo) {
         JPopupMenu popupMenu = new JPopupMenu();
 
@@ -268,11 +349,28 @@ public class ToDoController {
         return popupMenu;
     }
 
+    /**
+     * Mostra il menu contestuale (popup) per un ToDo in risposta a un evento del mouse.
+     * Questo metodo fa da ponte tra l'evento di input (click destro) e la logica di creazione del menu.
+     * Utilizza {@link #createToDoContextMenu(ToDo)} per generare il menu e lo posiziona
+     * esattamente alle coordinate (x, y) dove l'utente ha cliccato.
+     *
+     * @param e    L'evento del mouse che ha scatenato la richiesta (contiene le coordinate).
+     * @param todo Il ToDo su cui è stato effettuato il click.
+     */
     private void showToDoContextMenu(MouseEvent e, ToDo todo) {
         JPopupMenu popupMenu = createToDoContextMenu(todo);
         popupMenu.show(e.getComponent(), e.getX(), e.getY());
     }
 
+    /**
+     * Sposta un ToDo su o giù all'interno della sua bacheca.
+     * Il metodo scambia la posizione (`posizione`) del ToDo selezionato con quella del ToDo adiacente.
+     * Aggiorna entrambi i record nel database e ridisegna l'interfaccia.
+     *
+     * @param todo      Il ToDo da spostare.
+     * @param direzione -1 per spostare su (decrementa posizione), +1 per spostare giù (incrementa posizione).
+     */
     private void spostaToDo(ToDo todo, int direzione) {
         Bacheca bacheca = todo.getBacheca();
         if(bacheca == null) return;
@@ -315,6 +413,12 @@ public class ToDoController {
         refreshMainFrameToDos();
     }
 
+    /**
+     * Gestisce il cambio di stato (Completato/Non Completato) tramite la checkbox principale.
+     *
+     * @param todo        Il ToDo modificato.
+     * @param isCompleted Il nuovo stato della checkbox.
+     */
     private void handleToDoCompletionChange(ToDo todo, boolean isCompleted) {
         if (isCompleted) {
             todo.setStato(StatoToDo.COMPLETATO);
@@ -325,6 +429,13 @@ public class ToDoController {
         refreshMainFrameToDos();
     }
 
+    /**
+     * Aggiunge un nuovo ToDo a una bacheca specifica.
+     * Salva il ToDo nel database e le eventuali attività della checklist associate.
+     *
+     * @param todo         Il nuovo oggetto ToDo da salvare.
+     * @param bachecaTitle Il titolo della bacheca di destinazione.
+     */
     public void addToDoToBacheca(ToDo todo, TitoloBacheca bachecaTitle) {
         Bacheca targetBacheca = null;
         for (Bacheca b : utenteCorrente.getBacheche()) {
@@ -350,6 +461,12 @@ public class ToDoController {
         }
     }
 
+    /**
+     * Aggiorna un ToDo esistente con nuove informazioni.
+     * Ricrea le attività della checklist (eliminando le vecchie e inserendo le nuove) per semplicità.
+     *
+     * @param updatedToDo Il ToDo con i dati aggiornati.
+     */
     public void updateToDoInBacheca(ToDo updatedToDo) {
         toDoDAO.updateToDo(updatedToDo);
         refreshMainFrameToDos();
@@ -363,6 +480,12 @@ public class ToDoController {
         JOptionPane.showMessageDialog(mainFrame, "ToDo modificato con successo!");
     }
 
+    /**
+     * Elimina definitivamente un ToDo dal sistema.
+     * Chiede conferma all'utente prima di procedere.
+     *
+     * @param todo Il ToDo da eliminare.
+     */
     public void deleteToDo(ToDo todo) {
         int confirm = JOptionPane.showConfirmDialog(mainFrame, "Sei sicuro di voler eliminare questo ToDo?", "Conferma Eliminazione", JOptionPane.YES_NO_OPTION);
         if(confirm == JOptionPane.YES_OPTION) {
@@ -383,6 +506,11 @@ public class ToDoController {
         }
     }
 
+    /**
+     * Apre un dialog per spostare un ToDo da una bacheca a un'altra.
+     *
+     * @param todo Il ToDo da spostare.
+     */
     private void openMoveToDoDialog(ToDo todo) {
         TitoloBacheca[] bachecaTitoli = TitoloBacheca.values();
         TitoloBacheca selectedTitle = (TitoloBacheca) JOptionPane.showInputDialog(
@@ -396,6 +524,12 @@ public class ToDoController {
         }
     }
 
+    /**
+     * Esegue lo spostamento logico di un ToDo verso un'altra bacheca.
+     *
+     * @param todo                Il ToDo da spostare.
+     * @param targetTitoloBacheca Il titolo della bacheca di destinazione.
+     */
     public void moveToDo(ToDo todo, TitoloBacheca targetTitoloBacheca) {
         Bacheca sourceBacheca = todo.getBacheca();
         if(sourceBacheca != null) {
@@ -424,14 +558,26 @@ public class ToDoController {
         }
     }
 
+    /**
+     * Restituisce l'utente attualmente loggato.
+     * @return L'oggetto Utente.
+     */
     public Utente getUtenteCorrente() {
         return utenteCorrente;
     }
 
+    /**
+     * Restituisce la lista di tutti gli utenti registrati nel sistema.
+     * Utile per le funzionalità di condivisione.
+     * @return Lista di utenti.
+     */
     public List<Utente> getUtentiRegistrati() {
         return utenteDAO.getAllUtenti();
     }
 
+    /**
+     * Gestisce la creazione di una nuova bacheca, se l'utente non ha ancora raggiunto il limite.
+     */
     private void openCreaBachecaDialog() {
         List<TitoloBacheca> titoliPosseduti = utenteCorrente.getBacheche().stream().map(Bacheca::getTitolo).collect(Collectors.toList());
         List<TitoloBacheca> titoliDisponibili = new ArrayList<>();
@@ -462,6 +608,10 @@ public class ToDoController {
         }
     }
 
+    /**
+     * Gestisce l'eliminazione di una bacheca esistente.
+     * Impedisce di eliminare l'ultima bacheca rimasta.
+     */
     private void openEliminaBachecaDialog() {
         if(utenteCorrente.getBacheche().size() <= 1) {
             JOptionPane.showMessageDialog(mainFrame, "Non puoi eliminare l'ultima bacheca. Deve rimanerne almeno una.", "Errore", JOptionPane.ERROR_MESSAGE);
@@ -504,6 +654,9 @@ public class ToDoController {
         }
     }
 
+    /**
+     * Apre un dialog per modificare la descrizione di una bacheca.
+     */
     private void openModificaDescrizioneDialog(Bacheca bacheca, BachecaPanel panelView) {
         String oldDesc =  bacheca.getDescrizione();
         String newDesc = (String) JOptionPane.showInputDialog(
@@ -521,6 +674,10 @@ public class ToDoController {
         }
     }
 
+    /**
+     * Mostra un pannello informativo dettagliato (di sola lettura) per un ToDo.
+     * Mostra titolo, descrizione, bacheca, scadenza, URL, immagine e checklist.
+     */
     private void showToDoInfo(ToDo todo) {
         JPanel infoPanel = new JPanel(new BorderLayout(10, 10));
         infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -575,6 +732,15 @@ public class ToDoController {
         );
     }
 
+    /**
+     * Gestisce il completamento di una sotto-attività (sub-task) della checklist.
+     * Aggiorna lo stato dell'attività, verifica se il ToDo genitore deve essere
+     * marcato come completato automaticamente, e salva le modifiche.
+     *
+     * @param parentToDo  Il ToDo che contiene la checklist.
+     * @param subTask     L'attività modificata.
+     * @param isCompleted Il nuovo stato di completamento.
+     */
     private void handleSubTaskCompletionChange(ToDo parentToDo, Attivita subTask, boolean isCompleted) {
         subTask.setStato(isCompleted ? StatoAttivita.COMPLETATO : StatoAttivita.NON_COMPLETATO);
         attivitaDAO.updateAttivita(subTask);
@@ -586,6 +752,9 @@ public class ToDoController {
         refreshMainFrameToDos();
     }
 
+    /**
+     * Metodo di supporto per gestire l'aggiornamento di un ToDo che potrebbe essere stato spostato di bacheca.
+     */
     public void aggiornaToDoEsistente(ToDo todo, TitoloBacheca oldBachecaTitolo, TitoloBacheca newBachecaTitolo) {
         try {
             if (oldBachecaTitolo != newBachecaTitolo) {
@@ -619,6 +788,9 @@ public class ToDoController {
         }
     }
 
+    /**
+     * Metodo di supporto per salvare un ToDo appena creato e assegnargli una posizione corretta.
+     */
     public void salvaNuovoToDo(ToDo todo, TitoloBacheca bachecaTitle) {
         Bacheca targetBacheca = utenteCorrente.getBacheche().stream()
                 .filter(b -> b.getTitolo() == bachecaTitle)
@@ -649,22 +821,52 @@ public class ToDoController {
         }
     }
 
+    /**
+     * Restituisce il DAO per la gestione dei ToDo.
+     * Utilizzato dai sotto-controller (es. Ricerca, Dialog) per eseguire operazioni CRUD sui ToDo.
+     *
+     * @return L'istanza configurata di {@link ToDoDAO}.
+     */
     public ToDoDAO getToDoDAO() {
         return toDoDAO;
     }
 
+    /**
+     * Restituisce il DAO per la gestione degli utenti.
+     * Utilizzato per recuperare informazioni sugli autori o per le funzionalità di login/registrazione.
+     *
+     * @return L'istanza configurata di {@link UtenteDAO}.
+     */
     public UtenteDAO getUtenteDAO() {
         return utenteDAO;
     }
 
+    /**
+     * Restituisce il DAO per la gestione delle condivisioni.
+     * Utilizzato dal {@link CondivisioneController} per aggiungere o rimuovere accessi ai ToDo.
+     *
+     * @return L'istanza configurata di {@link CondivisioneDAO}.
+     */
     public CondivisioneDAO getCondivisioneDAO() {
         return condivisioneDAO;
     }
 
+    /**
+     * Restituisce il DAO per la gestione delle attività (Checklist).
+     * Utilizzato per salvare o aggiornare lo stato delle sotto-attività.
+     *
+     * @return L'istanza configurata di {@link AttivitaDAO}.
+     */
     public AttivitaDAO getAttivitaDAO() {
         return attivitaDAO;
     }
 
+    /**
+     * Restituisce il DAO per la gestione delle bacheche.
+     * Utilizzato per caricare le bacheche dell'utente o modificarne i dettagli.
+     *
+     * @return L'istanza configurata di {@link BachecaDAO}.
+     */
     public BachecaDAO getBachecaDAO() {
         return bachecaDAO;
     }

@@ -12,15 +12,43 @@ import java.util.stream.Collectors;
 import javax.swing.*;
 import java.awt.Dimension;
 
+/**
+ * Gestisce le funzionalità di ricerca dei ToDo all'interno dell'applicazione.
+ * <p>
+ * Questa classe funge da intermediario tra la vista {@link gui.SearchDialog}
+ * e il livello dati (DAO), permettendo all'utente di cercare attività
+ * [cite_start]per titolo, descrizione o data di scadenza[cite: 20].
+ * </p>
+ *
+ * @author marrenza
+ * @version 1.0
+ */
 public class RicercaController {
+    /** Riferimento al controller principale per l'accesso ai dati globali (utente, DAO). */
     private ToDoController mainController;
+
+    /** La finestra di dialogo utilizzata per l'inserimento dei parametri di ricerca. */
     private SearchDialog searchDialog;
 
+    /**
+     * Costruttore del controller di ricerca.
+     *
+     * @param mainController Il controller principale dell'applicazione.
+     */
     public RicercaController(ToDoController mainController) {
         this.mainController = mainController;
     }
 
-
+    /**
+     * Inizializza e visualizza la finestra di dialogo per la ricerca.
+     * <p>
+     * Configura gli ActionListener per i pulsanti:
+     * <ul>
+     * <li><b>Cerca:</b> Esegue la ricerca personalizzata in base ai campi compilati.</li>
+     * <li><b>ToDo in Scadenza Oggi:</b> Esegue una ricerca rapida per la data odierna.</li>
+     * </ul>
+     * </p>
+     */
     public void openSearchDialog() {
         searchDialog = new SearchDialog(null, "Cerca ToDo", true);
 
@@ -30,6 +58,15 @@ public class RicercaController {
         searchDialog.setVisible(true);
     }
 
+    /**
+     * Esegue la ricerca recuperando i criteri inseriti dall'utente nella dialog.
+     * <p>
+     * La logica segue questa priorità:
+     * [cite_start]1. Se il campo data è compilato, esegue una ricerca per scadenza (formato YYYY-MM-DD)[cite: 19].
+     * [cite_start]2. Se il campo data è vuoto ma c'è del testo, esegue una ricerca per titolo o descrizione[cite: 20].
+     * </p>
+     * Gestisce l'eccezione {@link DateTimeParseException} se il formato della data non è valido.
+     */
     private void performSearch() {
         String searchTerm = searchDialog.getTxtSearchTerm().getText();
         String scadenzaText = searchDialog.getTxtScadenzaSearch().getText();
@@ -56,12 +93,23 @@ public class RicercaController {
         }
     }
 
+    /**
+     * [cite_start]Esegue una ricerca rapida di tutti i ToDo che scadono nella data odierna[cite: 19].
+     * Utilizza l'utente corrente per filtrare i risultati.
+     */
     private void showTodayExpiringToDos() {
         int currentUserId = mainController.getUtenteCorrente().getId();
         List<ToDo> expiringToday = mainController.getToDoDAO().findToDosScadenzaOggi(currentUserId);
         showSearchResults(expiringToday);
     }
 
+    /**
+     * Formatta e visualizza i risultati della ricerca in una finestra di messaggio (JOptionPane).
+     * Per ogni ToDo trovato, mostra il titolo, la scadenza (se presente) e la bacheca di appartenenza.
+     * Se la lista dei risultati è vuota, avvisa l'utente.
+     *
+     * @param results La lista dei {@link ToDo} ottenuti dalla ricerca.
+     */
     private void showSearchResults(List<ToDo> results) {
         if (results.isEmpty()) {
             JOptionPane.showMessageDialog(searchDialog, "Nessun ToDo trovato.", "Risultati Ricerca", JOptionPane.INFORMATION_MESSAGE);

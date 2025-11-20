@@ -9,16 +9,43 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.awt.event.ActionListener;
 
+/**
+ * Gestisce la logica della finestra di dialogo per la creazione e modifica dei ToDo.
+ * <p>
+ * Questa classe controlla la {@link ToDoDialog}, gestendo l'apertura della finestra,
+ * il popolamento dei campi (in caso di modifica), la validazione dell'input
+ * e il salvataggio dei dati (delegando poi l'aggiornamento al {@link ToDoController}).
+ * </p>
+ *
+ * @author marrenza
+ * @version 1.0
+ */
 public class ToDoDialogController {
+    /** Riferimento al controller principale per delegare le operazioni di persistenza. */
     private ToDoController mainController;
+
+    /** La vista (dialog) gestita da questo controller. */
     private ToDoDialog toDoDialog;
+
+    /** * Il ToDo attualmente in fase di modifica.
+     * Se è {@code null}, significa che si sta creando un nuovo ToDo.
+     */
     private ToDo toDoToEdit;
 
-
+    /**
+     * Costruttore del controller della dialog.
+     *
+     * @param mainController Il controller principale dell'applicazione.
+     */
     public ToDoDialogController(ToDoController mainController) {
         this.mainController = mainController;
     }
 
+    /**
+     * Apre la finestra di dialogo in modalità "Creazione".
+     * Inizializza un form vuoto, resetta la variabile {@code toDoToEdit} a null
+     * e collega il listener per il salvataggio.
+     */
     public void openAddToDoDialog() {
         this.toDoToEdit = null;
         toDoDialog = new ToDoDialog(null, "Aggiungi ToDo", true);
@@ -33,6 +60,13 @@ public class ToDoDialogController {
         toDoDialog.setVisible(true);
     }
 
+    /**
+     * Apre la finestra di dialogo in modalità "Modifica".
+     * Popola i campi del form con i dati del ToDo passato come parametro.
+     * Ricostruisce anche la visualizzazione della Checklist e imposta la bacheca corretta.
+     *
+     * @param toDoToEdit Il ToDo esistente da modificare.
+     */
     public void openEditToDoDialog(ToDo toDoToEdit) { //
         this.toDoToEdit = toDoToEdit;
         toDoDialog = new ToDoDialog(null, "Modifica ToDo", true);
@@ -66,6 +100,19 @@ public class ToDoDialogController {
         toDoDialog.setVisible(true);
     }
 
+    /**
+     * Gestisce l'evento di salvataggio (click sul pulsante "Salva").
+     * <p>
+     * Esegue le seguenti operazioni:
+     * <ol>
+     * <li>Valida i campi obbligatori (Titolo e Scadenza).</li>
+     * <li>Effettua il parsing della data.</li>
+     * <li>Raccoglie i dati dal form (inclusi i campi dinamici della Checklist).</li>
+     * <li>Se {@code toDoToEdit} è null, crea un nuovo ToDo e chiama {@code salvaNuovoToDo}.</li>
+     * <li>Se {@code toDoToEdit} esiste, aggiorna l'oggetto e chiama {@code aggiornaToDoEsistente}.</li>
+     * </ol>
+     * </p>
+     */
     private void handleSave() {
         try {
             String titolo = toDoDialog.getTxtTitolo().getText();
