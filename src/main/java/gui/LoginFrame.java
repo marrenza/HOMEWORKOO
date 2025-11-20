@@ -3,12 +3,33 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
+/**
+ * Finestra iniziale per l'autenticazione dell'utente nel sistema ToDo Manager.
+ * Questa classe estende {@link JFrame} e fornisce l'interfaccia grafica per il login.
+ * Contiene i campi per l'inserimento di username e password e i pulsanti per
+ * confermare l'accesso o navigare verso la registrazione di un nuovo account.
+ *
+ * @author marrenza
+ * @version 1.0
+ */
 public class LoginFrame extends JFrame {
+    /** Campo di testo per l'inserimento dello username (login). */
     private JTextField userField;
+
+    /** Campo di testo mascherato per l'inserimento sicuro della password. */
     private JPasswordField passField;
+
+    /** Pulsante per avviare la procedura di login. */
     private JButton loginButton;
+
+    /** Pulsante per aprire la finestra di registrazione di un nuovo utente. */
     private JButton registerButton;
 
+    /**
+     * Costruttore che inizializza e configura la finestra di login.
+     * Imposta le dimensioni, il layout (GridBagLayout), i colori e lo stile dei componenti.
+     * Posiziona le etichette, i campi di input e i pulsanti all'interno della finestra.
+     */
     public LoginFrame() {
         setTitle("Login - ToDo Manager");
         setSize(400, 300);
@@ -72,19 +93,36 @@ public class LoginFrame extends JFrame {
         add(buttonPanel, gbc);
     }
 
-    // Getter per controller
+    /**
+     * Restituisce il pulsante di login.
+     * Utilizzato dal controller per aggiungere l'ActionListener che gestisce l'autenticazione.
+     * @return Il JButton "Login".
+     */
     public JButton getLoginButton() {
         return loginButton;
     }
 
+    /**
+     * Restituisce il pulsante di registrazione.
+     * Utilizzato dal controller per aggiungere l'ActionListener che apre il dialog di registrazione.
+     * @return Il JButton "Registrati".
+     */
     public JButton getRegisterButton() {
         return registerButton;
     }
 
+    /**
+     * Restituisce il campo di testo dove l'utente inserisce lo username.
+     * @return Il JTextField per lo username.
+     */
     public JTextField getUserField() {
         return userField;
     }
 
+    /**
+     * Restituisce il campo password.
+     * @return Il JPasswordField contenente la password mascherata.
+     */
     public JPasswordField getPassField() {
         return passField;
     }
