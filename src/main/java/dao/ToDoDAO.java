@@ -102,6 +102,17 @@ public interface ToDoDAO {
     List<ToDo> getToDosForBachecaAndUtente(int bachecaId,  int utenteId);
 
     /**
+     * Cerca i ToDo che sono *già scaduti* (data precedente a oggi) e non ancora completati.
+     * <p>
+     * Questo metodo è utile per mostrare all'utente le attività arretrate ("in rosso").
+     * </p>
+     *
+     * @param userId L'ID dell'utente corrente.
+     * @return Una lista di {@link ToDo} scaduti e non completati.
+     */
+    List<ToDo> findToDosScaduti(int userId);
+
+    /**
      * Imposta come "COMPLETATO" tutti i ToDo appartenenti a una specifica bacheca.
      * Operazione batch utile per chiudere rapidamente una lista di attività.
      *

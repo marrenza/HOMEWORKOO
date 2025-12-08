@@ -3,12 +3,10 @@ package controller;
 import gui.SearchDialog;
 import model.Bacheca;
 import model.ToDo;
-import model.TitoloBacheca;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 import javax.swing.*;
 import java.awt.Dimension;
 
@@ -17,13 +15,14 @@ import java.awt.Dimension;
  * <p>
  * Questa classe funge da intermediario tra la vista {@link gui.SearchDialog}
  * e il livello dati (DAO), permettendo all'utente di cercare attività
- * [cite_start]per titolo, descrizione o data di scadenza[cite: 20].
+ * per titolo, descrizione, data di scadenza o visualizzare le scadenze odierne/passate.
  * </p>
  *
- * @author marrenza
- * @version 1.0
+ * @author Utente
+ * @version 1.1
  */
 public class RicercaController {
+
     /** Riferimento al controller principale per l'accesso ai dati globali (utente, DAO). */
     private ToDoController mainController;
 
@@ -45,14 +44,17 @@ public class RicercaController {
      * Configura gli ActionListener per i pulsanti:
      * <ul>
      * <li><b>Cerca:</b> Esegue la ricerca personalizzata in base ai campi compilati.</li>
-     * <li><b>ToDo in Scadenza Oggi:</b> Esegue una ricerca rapida per la data odierna.</li>
+     * <li><b>ToDo in Scadenza Oggi:</b> Cerca le attività che scadono nella data odierna.</li>
+     * <li><b>ToDo Scaduti:</b> Cerca le attività non completate con scadenza passata.</li>
      * </ul>
+     * </p>
      */
     public void openSearchDialog() {
         searchDialog = new SearchDialog(null, "Cerca ToDo", true);
 
         searchDialog.getBtnCerca().addActionListener(e -> performSearch());
         searchDialog.getBtnScadenzaOdierna().addActionListener(e -> showTodayExpiringToDos());
+        searchDialog.getBtnGiaScaduti().addActionListener(e -> showExpiredToDos());
 
         searchDialog.setVisible(true);
     }
@@ -61,8 +63,8 @@ public class RicercaController {
      * Esegue la ricerca recuperando i criteri inseriti dall'utente nella dialog.
      * <p>
      * La logica segue questa priorità:
-     * [cite_start]1. Se il campo data è compilato, esegue una ricerca per scadenza (formato YYYY-MM-DD)[cite: 19].
-     * [cite_start]2. Se il campo data è vuoto ma c'è del testo, esegue una ricerca per titolo o descrizione[cite: 20].
+     * 1. Se il campo data è compilato, esegue una ricerca per scadenza (formato YYYY-MM-DD).
+     * 2. Se il campo data è vuoto ma c'è del testo, esegue una ricerca per titolo o descrizione.
      * </p>
      * Gestisce l'eccezione {@link DateTimeParseException} se il formato della data non è valido.
      */
@@ -93,7 +95,7 @@ public class RicercaController {
     }
 
     /**
-     * [cite_start]Esegue una ricerca rapida di tutti i ToDo che scadono nella data odierna[cite: 19].
+     * Esegue una ricerca rapida di tutti i ToDo che scadono esattamente nella data odierna.
      * Utilizza l'utente corrente per filtrare i risultati.
      */
     private void showTodayExpiringToDos() {
@@ -103,9 +105,25 @@ public class RicercaController {
     }
 
     /**
+     * Esegue una ricerca per individuare i ToDo scaduti (data precedente a oggi)
+     * e non ancora completati.
+     * <p>
+     * Recupera l'ID dell'utente corrente e interroga il DAO tramite {@code findToDosScaduti}.
+     * I risultati vengono poi mostrati nella finestra di dialogo dei risultati.
+     * </p>
+     */
+    private void showExpiredToDos() {
+        int currentUserId = mainController.getUtenteCorrente().getId();
+        List<ToDo> expired = mainController.getToDoDAO().findToDosScaduti(currentUserId);
+        showSearchResults(expired);
+    }
+
+    /**
      * Formatta e visualizza i risultati della ricerca in una finestra di messaggio (JOptionPane).
+     * <p>
      * Per ogni ToDo trovato, mostra il titolo, la scadenza (se presente) e la bacheca di appartenenza.
      * Se la lista dei risultati è vuota, avvisa l'utente.
+     * </p>
      *
      * @param results La lista dei {@link ToDo} ottenuti dalla ricerca.
      */

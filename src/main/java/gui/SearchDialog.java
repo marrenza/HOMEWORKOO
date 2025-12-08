@@ -5,18 +5,21 @@ import java.awt.*;
 
 /**
  * Finestra di dialogo per la ricerca dei ToDo.
+ * <p>
  * Questa classe fornisce l'interfaccia grafica che permette all'utente di filtrare
  * le proprie attività. Offre tre modalità di interazione:
  * <ul>
  * <li>Ricerca testuale (per Titolo o Descrizione).</li>
  * <li>Ricerca per data di scadenza specifica.</li>
- * <li>Ricerca rapida per i ToDo in scadenza nella giornata odierna.</li>
+ * <li>Ricerca rapida per i ToDo in scadenza oggi o già scaduti.</li>
  * </ul>
+ * </p>
  *
  * @author marrenza
  * @version 1.0
  */
 public class SearchDialog extends JDialog {
+
     /** Campo di testo per inserire la parola chiave da cercare nel titolo o descrizione. */
     private JTextField txtSearchTerm;
 
@@ -28,6 +31,9 @@ public class SearchDialog extends JDialog {
 
     /** Pulsante per avviare una ricerca immediata delle attività che scadono oggi. */
     private JButton btnScadenzaOdierna;
+
+    /** Pulsante per avviare una ricerca immediata delle attività che sono già scadute. */
+    private JButton btnGiaScaduti;
 
     /** Pulsante per chiudere la finestra di ricerca. */
     private JButton btnAnnulla;
@@ -42,7 +48,8 @@ public class SearchDialog extends JDialog {
      */
     public SearchDialog(Frame owner, String title, boolean modal) {
         super(owner, title, modal);
-        setSize(400, 250);
+        // Altezza aumentata a 450 per contenere comodamente tutti i tasti
+        setSize(500, 450);
         setLocationRelativeTo(owner);
         setLayout(new GridBagLayout());
         setResizable(false);
@@ -62,6 +69,7 @@ public class SearchDialog extends JDialog {
 
         btnCerca = new JButton("Cerca");
         btnScadenzaOdierna = new JButton("ToDo in Scadenza Oggi");
+        btnGiaScaduti = new JButton("ToDo Scaduti (Passati)");
         btnAnnulla = new JButton("Annulla");
 
         btnAnnulla.addActionListener(e -> dispose());
@@ -69,28 +77,68 @@ public class SearchDialog extends JDialog {
 
     /**
      * Dispone i componenti all'interno della finestra utilizzando {@link GridBagLayout}.
-     * Organizza etichette e campi di input su righe successive.
+     * Organizza etichette e campi di input su righe successive con spaziature adeguate.
      */
     private void layoutComponents() {
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.insets = new Insets(5, 10, 5, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         int row = 0;
 
-        gbc.gridx = 0; gbc.gridy = row; add(new JLabel("Cerca per Titolo/Descrizione:"), gbc);
-        gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; add(txtSearchTerm, gbc);
+        // --- Riga 0: Etichetta Titolo ---
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        add(new JLabel("Cerca per Titolo/Descrizione:"), gbc);
 
-        gbc.gridx = 0; gbc.gridy = row; add(new JLabel("Cerca per Scadenza (YYYY-MM-DD):"), gbc);
-        gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; add(txtScadenzaSearch, gbc);
+        // --- Riga 1: Campo Titolo ---
+        gbc.gridx = 1;
+        gbc.gridy = row++;
+        gbc.weightx = 1.0;
+        txtSearchTerm.setPreferredSize(new Dimension(200, 30));
+        add(txtSearchTerm, gbc);
 
-        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2; add(btnCerca, gbc);
+        // --- Riga 2: Etichetta Scadenza ---
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        add(new JLabel("Cerca per Scadenza (YYYY-MM-DD):"), gbc);
+
+        // --- Riga 3: Campo Scadenza ---
+        gbc.gridx = 1;
+        gbc.gridy = row++;
+        gbc.weightx = 1.0;
+        txtScadenzaSearch.setPreferredSize(new Dimension(200, 30));
+        add(txtScadenzaSearch, gbc);
+
+        // --- Riga 4: Pulsante Cerca ---
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(20, 10, 5, 10);
+        add(btnCerca, gbc);
         row++;
 
-        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2; add(btnScadenzaOdierna, gbc);
+        // --- Riga 5: Pulsante Scadenza Oggi ---
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(5, 10, 5, 10);
+        add(btnScadenzaOdierna, gbc);
         row++;
 
-        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2; add(btnAnnulla, gbc);
+        // --- Riga 6: Pulsante Già Scaduti ---
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.gridwidth = 2;
+        add(btnGiaScaduti, gbc);
+        row++;
+
+        // --- Riga 7: Pulsante Annulla ---
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(15, 10, 15, 10);
+        add(btnAnnulla, gbc);
     }
 
     /**
@@ -118,4 +166,10 @@ public class SearchDialog extends JDialog {
      * @return Il componente JButton.
      */
     public JButton getBtnScadenzaOdierna() { return btnScadenzaOdierna; }
+
+    /**
+     * Restituisce il pulsante per la ricerca dei ToDo già scaduti.
+     * @return Il componente JButton.
+     */
+    public JButton getBtnGiaScaduti() { return btnGiaScaduti; }
 }

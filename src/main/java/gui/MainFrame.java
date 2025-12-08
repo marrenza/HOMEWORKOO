@@ -54,7 +54,7 @@ public class MainFrame extends JFrame {
 
         setResizable(true);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
-        //Header
+
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(new Color(6, 0, 64));
 

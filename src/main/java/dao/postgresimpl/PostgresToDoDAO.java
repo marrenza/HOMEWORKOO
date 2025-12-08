@@ -9,45 +9,33 @@ import model.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Date;
 import java.time.LocalDate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.time.LocalDate;
 
 /**
  * Implementazione concreta dell'interfaccia {@link ToDoDAO} per il database PostgreSQL.
+ * <p>
  * Questa classe gestisce tutte le operazioni di persistenza relative ai {@link ToDo}.
  * Si occupa di query complesse che coinvolgono join con la tabella delle condivisioni
  * e utilizza altri DAO (Utente, Attivita, Condivisione) per ricostruire l'intero
  * grafo degli oggetti quando un ToDo viene letto dal database.
+ * </p>
  *
  * @author Utente
- * @version 1.0
+ * @version 1.1
  */
-public class PostgresToDoDAO implements ToDoDAO{
-    /** Connessione attiva al database. */
+public class PostgresToDoDAO implements ToDoDAO {
+
     private final Connection connection;
-
-    /** DAO per recuperare i dati dell'autore del ToDo. */
     private final UtenteDAO utenteDAO;
-
-    /** DAO per recuperare la checklist associata al ToDo. */
     private final AttivitaDAO attivitaDAO;
-
-    /** DAO per recuperare le informazioni sulla condivisione. */
     private final CondivisioneDAO condivisioneDAO;
 
     private static final Logger logger = Logger.getLogger(PostgresToDoDAO.class.getName());
-    private static final String COL_DESCRIZIONE = "descrizione";
-    private static final String COL_COLORE = "colore";
-    private static final String COL_TITOLO = "titolo";
-    private static final String COL_SCADENZA = "scadenza";
+
     private static final String COL_STATO = "stato";
     private static final String COL_POSIZIONE = "posizione";
-    private static final String COL_ID_BOARD = "id_board";
-    private static final String COL_ID_UTENTE = "id_utente";
-    private static final String COL_CONDIVISO_DA_UTENTE = "condiviso_da_utente";
     private static final String COL_ID_AUTORE = "id_autore";
     private static final String COL_ID_BACHECA = "id_bacheca";
 
@@ -69,7 +57,6 @@ public class PostgresToDoDAO implements ToDoDAO{
 
     /**
      * Inserisce un nuovo ToDo nel database.
-     * Utilizza {@code RETURNING id} per ottenere e impostare l'ID generato automaticamente.
      *
      * @param todo Il ToDo da salvare.
      */
@@ -82,12 +69,10 @@ public class PostgresToDoDAO implements ToDoDAO{
 
             stmt.setString(1, todo.getTitolo());
             stmt.setString(2, todo.getDescrizione());
-
             stmt.setDate(3, java.sql.Date.valueOf(todo.getScadenza()));
             stmt.setString(4, todo.getImaginePath());
             stmt.setString(5, todo.getURL());
             stmt.setString(6, todo.getColoreSfondo());
-
 
             if (todo.getStato() == null) {
                 todo.setStato(StatoToDo.NON_COMPLETATO);
@@ -111,7 +96,7 @@ public class PostgresToDoDAO implements ToDoDAO{
      * Recupera un ToDo dato il suo ID.
      *
      * @param id L'ID del ToDo.
-     * @return L'oggetto ToDo completo (con checklist e condivisioni), o null se non trovato.
+     * @return L'oggetto ToDo completo, o null se non trovato.
      */
     @Override
     public ToDo getToDoById(int id) {
@@ -130,8 +115,7 @@ public class PostgresToDoDAO implements ToDoDAO{
     }
 
     /**
-     * Recupera tutti i ToDo presenti nel sistema, ordinati per posizione.
-     * Nota: questo metodo non filtra per utente (usato raramente nell'app finale, più per debug).
+     * Recupera tutti i ToDo presenti nel sistema (senza filtri).
      *
      * @return Lista di tutti i ToDo.
      */
@@ -153,7 +137,7 @@ public class PostgresToDoDAO implements ToDoDAO{
     }
 
     /**
-     * Aggiorna tutti i campi di un ToDo esistente.
+     * Aggiorna un ToDo esistente.
      *
      * @param todo Il ToDo con i dati aggiornati.
      */
@@ -199,8 +183,6 @@ public class PostgresToDoDAO implements ToDoDAO{
 
     /**
      * Cerca i ToDo per termine di ricerca (titolo o descrizione).
-     * La query utilizza un {@code LEFT JOIN} con la tabella {@code condivisione} per trovare
-     * sia i ToDo creati dall'utente ({@code id_autore}) sia quelli condivisi con lui ({@code id_utente}).
      *
      * @param searchTerm Il testo da cercare.
      * @param userId     L'ID dell'utente corrente.
@@ -218,7 +200,7 @@ public class PostgresToDoDAO implements ToDoDAO{
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, userId);
             stmt.setInt(2, userId);
-            stmt.setString(3, "%" + searchTerm.toLowerCase() + "%"); // Cerca 'searchTerm' ovunque
+            stmt.setString(3, "%" + searchTerm.toLowerCase() + "%");
             stmt.setString(4, "%" + searchTerm.toLowerCase() + "%");
 
             ResultSet rs = stmt.executeQuery();
@@ -232,8 +214,7 @@ public class PostgresToDoDAO implements ToDoDAO{
     }
 
     /**
-     * Cerca i ToDo che scadono entro una certa data.
-     * Implementa la logica di visibilità condivisa (autore o condiviso).
+     * Cerca i ToDo che scadono entro (o il) una certa data.
      *
      * @param date   La data limite.
      * @param userId L'ID dell'utente corrente.
@@ -245,7 +226,7 @@ public class PostgresToDoDAO implements ToDoDAO{
         String sql = "SELECT t.* FROM todo t " +
                 "LEFT JOIN condivisione c ON t.id = c.id_todo " +
                 "WHERE (t.id_autore = ? OR c.id_utente = ?) " +
-                "AND t.scadenza <= ? " +
+                "AND t.scadenza = ? " +
                 "GROUP BY t.id " +
                 "ORDER BY t.scadenza ASC";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
@@ -263,23 +244,75 @@ public class PostgresToDoDAO implements ToDoDAO{
     }
 
     /**
-     * Metodo di utilità per trovare i ToDo che scadono oggi.
+     * Cerca i ToDo che scadono *esattamente* oggi.
+     * <p>
+     * Utilizza la condizione {@code t.scadenza = ?} per filtrare solo la data odierna.
+     * </p>
      *
      * @param userId L'ID dell'utente corrente.
-     * @return Lista di ToDo in scadenza oggi.
+     * @return Lista di ToDo che scadono oggi.
      */
     @Override
     public List<ToDo> findToDosScadenzaOggi(int userId) {
-        return findToDosByScadenza(LocalDate.now(), userId);
+        List<ToDo> todos = new ArrayList<>();
+        String sql = "SELECT t.* FROM todo t " +
+                "LEFT JOIN condivisione c ON t.id = c.id_todo " +
+                "WHERE (t.id_autore = ? OR c.id_utente = ?) " +
+                "AND t.scadenza = ? " + // UGUALE A OGGI
+                "GROUP BY t.id " +
+                "ORDER BY t.scadenza ASC";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            stmt.setInt(2, userId);
+            stmt.setDate(3, java.sql.Date.valueOf(LocalDate.now())); // Data odierna
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                todos.add(costruisciToDoDaResultSet(rs));
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Errore findToDosScadenzaOggi", e);
+        }
+        return todos;
+    }
+
+    /**
+     * Cerca i ToDo già scaduti (scadenza minore di oggi) e non completati.
+     * <p>
+     * Utilizza la condizione {@code t.scadenza < ?} e filtra per stato {@code NON_COMPLETATO}.
+     * </p>
+     *
+     * @param userId L'ID dell'utente corrente.
+     * @return Lista di ToDo scaduti da recuperare.
+     */
+    @Override
+    public List<ToDo> findToDosScaduti(int userId) {
+        List<ToDo> todos = new ArrayList<>();
+        String sql = "SELECT t.* FROM todo t " +
+                "LEFT JOIN condivisione c ON t.id = c.id_todo " +
+                "WHERE (t.id_autore = ? OR c.id_utente = ?) " +
+                "AND t.scadenza < ? " + // MINORE DI OGGI
+                "AND t.stato = 'NON_COMPLETATO' " + // Solo quelli non fatti
+                "GROUP BY t.id " +
+                "ORDER BY t.scadenza ASC";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            stmt.setInt(2, userId);
+            stmt.setDate(3, java.sql.Date.valueOf(LocalDate.now())); // Confronta con oggi
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                todos.add(costruisciToDoDaResultSet(rs));
+            }
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Errore findToDosScaduti", e);
+        }
+        return todos;
     }
 
     /**
      * Recupera i ToDo da visualizzare in una specifica bacheca per un utente.
-     * Questa è la query principale per popolare l'interfaccia. Recupera:
-     * 1. I ToDo che appartengono alla bacheca specificata.
-     * 2. FILTRATI per: essere creati dall'utente OPPURE condivisi con l'utente.
-     * Questo permette di vedere nella bacheca "Lavoro" sia i propri task di lavoro
-     * sia quelli che i colleghi hanno condiviso.
+     * Include i ToDo creati dall'utente o condivisi con lui.
      *
      * @param bachecaId L'ID della bacheca.
      * @param utenteId  L'ID dell'utente corrente.
@@ -289,8 +322,9 @@ public class PostgresToDoDAO implements ToDoDAO{
     public List<ToDo> getToDosForBachecaAndUtente(int bachecaId, int utenteId) {
         List<ToDo> todos = new ArrayList<>();
         String sql = "SELECT t.* FROM todo t " +
+                "JOIN bacheca b_origin ON t.id_bacheca = b_origin.id " +
                 "LEFT JOIN condivisione c ON t.id = c.id_todo " +
-                "WHERE t.id_bacheca = ? " +
+                "WHERE b_origin.titolo = (SELECT titolo FROM bacheca WHERE id = ?) " +
                 "AND (t.id_autore = ? OR c.id_utente = ?) " +
                 "GROUP BY t.id " +
                 "ORDER BY t.posizione ASC";
@@ -326,17 +360,6 @@ public class PostgresToDoDAO implements ToDoDAO{
         }
     }
 
-    /**
-     * Metodo helper privato per convertire una riga del ResultSet in un oggetto ToDo completo.
-     * Oltre a mappare i campi semplici, utilizza i DAO ausiliari per caricare:
-     * - L'autore (UtenteDAO)
-     * - La checklist (AttivitaDAO)
-     * - Le condivisioni (CondivisioneDAO)
-     *
-     * @param rs Il ResultSet posizionato sulla riga corrente.
-     * @return L'oggetto ToDo costruito.
-     * @throws SQLException Se si verifica un errore SQL durante la lettura.
-     */
     private ToDo costruisciToDoDaResultSet(ResultSet rs) throws SQLException {
         int id = rs.getInt("id");
         String titolo = rs.getString("titolo");

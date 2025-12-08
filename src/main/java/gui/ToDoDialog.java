@@ -86,8 +86,7 @@ public class ToDoDialog extends JDialog {
      */
     public ToDoDialog(Frame owner, String title, boolean modal) {
         super(owner, title, modal);
-        setSize(500, 700);
-        setLocationRelativeTo(owner);
+        setSize(600, 750);
         setLayout(new BorderLayout());
         setResizable(false);
 
@@ -108,7 +107,6 @@ public class ToDoDialog extends JDialog {
         txtDescrizione = new JTextArea(5, 20);
         txtDescrizione.setLineWrap(true);
         txtDescrizione.setWrapStyleWord(true);
-        JScrollPane descScrollPane = new JScrollPane(txtDescrizione);
 
         txtScadenza = new JTextField(10);
         txtScadenza.setToolTipText("Formato: YYYY-MM-DD");
@@ -150,7 +148,7 @@ public class ToDoDialog extends JDialog {
         checklistPanel.setLayout(new BoxLayout(checklistPanel, BoxLayout.Y_AXIS));
         checklistPanel.setBorder(BorderFactory.createTitledBorder("Checklist Attività"));
         checklistScrollPane = new JScrollPane(checklistPanel);
-        checklistScrollPane.setPreferredSize(new Dimension(650,400));
+        checklistScrollPane.setPreferredSize(new Dimension(650,200));
 
         btnAddActivity = new JButton("Aggiungi Attività");
         btnSalva = new JButton("Salva");
@@ -174,11 +172,18 @@ public class ToDoDialog extends JDialog {
 
         int row = 0;
 
-        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Titolo (*):"), gbc);
+        gbc.gridx = 0; gbc.gridy = row; gbc.weighty = 0.0; formPanel.add(new JLabel("Titolo (*):"), gbc);
         gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; formPanel.add(txtTitolo, gbc);
 
-        gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Descrizione:"), gbc);
-        gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; formPanel.add(new JScrollPane(txtDescrizione), gbc);
+        gbc.gridx = 0; gbc.gridy = row; gbc.weighty = 0.0; formPanel.add(new JLabel("Descrizione:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; gbc.weighty = 0.2; gbc.fill = GridBagConstraints.BOTH;
+
+        JScrollPane scrollDesc = new JScrollPane(txtDescrizione);
+        scrollDesc.setPreferredSize(new Dimension(0, 100));
+        formPanel.add(scrollDesc, gbc);
+
+        gbc.weighty = 0.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
         gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Scadenza (YYYY-MM-DD) (*):"), gbc);
         gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; formPanel.add(txtScadenza, gbc);
@@ -211,9 +216,7 @@ public class ToDoDialog extends JDialog {
         gbc.gridx = 0; gbc.gridy = row++; gbc.gridwidth = 2; gbc.weighty = 0.0;
         formPanel.add(btnAddActivity, gbc);
 
-
         add(formPanel, BorderLayout.CENTER);
-
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.add(btnSalva);

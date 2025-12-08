@@ -97,16 +97,22 @@ public class CondivisioneController {
      * @param toDo Il ToDo di cui visualizzare le condivisioni.
      */
     public void showSharedUsers(ToDo toDo) {
-        if (toDo.getCondivisioni() == null || toDo.getCondivisioni().isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Questo ToDo non è condiviso con nessun altro utente.", "Condivisioni", JOptionPane.INFORMATION_MESSAGE);
-            return;
+        StringBuilder sb = new StringBuilder();
+        if(toDo.getAutore() != null) {
+            sb.append("Autore: ").append(toDo.getAutore().getNome())
+                    .append(" (").append(toDo.getAutore().getLogin()).append(")\n\n");
         }
 
-        StringBuilder sb = new StringBuilder("Questo ToDo è condiviso con:\n");
-        for (Condivisione c : toDo.getCondivisioni()) {
-            sb.append("- ").append(c.getUtente().getNome()).append(" (Login: ").append(c.getUtente().getLogin()).append(")\n");
+        if(toDo.getCondivisioni() == null || toDo.getCondivisioni().isEmpty()) {
+        sb.append("Questo ToDo non è condiviso con nessun altro utente.");
+        } else {
+            sb.append("Condiviso con:\n");
+            for(Condivisione c : toDo.getCondivisioni()) {
+                sb.append("- ").append(c.getUtente().getNome())
+                        .append(" (Login: ").append(c.getUtente().getLogin()).append(")\n");
+            }
         }
-        JOptionPane.showMessageDialog(null, sb.toString(), "Condivisioni ToDo", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(null, sb.toString(), "Info Condivisioni", JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**

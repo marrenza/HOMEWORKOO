@@ -63,10 +63,16 @@ public class LoginFrame extends JFrame {
         loginButton.setFont(buttonFont);
         loginButton.setFocusPainted(false);
 
+        loginButton.setOpaque(true);
+        loginButton.setBorderPainted(false);
+
         registerButton.setBackground(buttonBg);
         registerButton.setForeground(buttonFg);
         registerButton.setFont(buttonFont);
         registerButton.setFocusPainted(false);
+
+        registerButton.setOpaque(true);
+        registerButton.setBorderPainted(false);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
