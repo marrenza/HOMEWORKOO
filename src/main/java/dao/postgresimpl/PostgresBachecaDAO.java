@@ -1,7 +1,6 @@
 package dao.postgresimpl;
 
 import dao.BachecaDAO;
-import database.DatabaseConnection;
 import model.Bacheca;
 import model.TitoloBacheca;
 import java.sql.*;
@@ -24,6 +23,14 @@ public class PostgresBachecaDAO implements BachecaDAO {
 
     /** Nome della colonna Titolo nel database. */
     private static final String COLUMN_TITOLO = "titolo";
+
+    /** Nome della colonna Descrizione nel database*/
+    private static final String COLUMN_DESCRIZIONE = "descrizione";
+
+    /**Nome della Bacheca nel database*/
+    private static final String TABLE_NAME = "bacheca";
+
+    private static final String SELECT_ALL_QUERY = "SELECT id, " + COLUMN_TITOLO + ", " + COLUMN_DESCRIZIONE + ", " + COLUMN_ID_UTENTE + " FROM " + TABLE_NAME;
 
     /** La connessione attiva al database. */
     private final Connection connection;
@@ -58,7 +65,7 @@ public class PostgresBachecaDAO implements BachecaDAO {
             return;
         }
 
-        String sql = "INSERT INTO bacheca (" + COLUMN_TITOLO + ", descrizione, " + COLUMN_ID_UTENTE + ") VALUES (?, ?, ?) RETURNING id";
+        String sql = "INSERT INTO " + TABLE_NAME + " (" + COLUMN_TITOLO + ", " + COLUMN_DESCRIZIONE + ", " + COLUMN_ID_UTENTE + ") VALUES (?, ?, ?) RETURNING id";
         try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
             stmt.setString(1, bacheca.getTitolo().name());
             stmt.setString(2, bacheca.getDescrizione());
@@ -83,7 +90,7 @@ public class PostgresBachecaDAO implements BachecaDAO {
      */
     @Override
     public Bacheca getBachecaById(int id) {
-        String sql = "SELECT * FROM bacheca WHERE id = ?";
+        String sql = SELECT_ALL_QUERY + " WHERE id = ?";
         try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
             ResultSet rs = stmt.executeQuery();
@@ -91,7 +98,7 @@ public class PostgresBachecaDAO implements BachecaDAO {
                 return new Bacheca(
                         rs.getInt("id"),
                         TitoloBacheca.fromString(rs.getString(COLUMN_TITOLO)),
-                        rs.getString("descrizione"),
+                        rs.getString(COLUMN_DESCRIZIONE),
                         rs.getInt(COLUMN_ID_UTENTE)
                 );
             }
@@ -110,7 +117,7 @@ public class PostgresBachecaDAO implements BachecaDAO {
     @Override
     public List<Bacheca> getBachecaByUserId(int userId) {
         List<Bacheca> bacheche = new ArrayList<>();
-        String sql = "SELECT * FROM bacheca WHERE " + COLUMN_ID_UTENTE + " = ?";
+        String sql = SELECT_ALL_QUERY + " WHERE " + COLUMN_ID_UTENTE + " = ?";
         try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
             stmt.setInt(1, userId);
             ResultSet rs = stmt.executeQuery();
@@ -118,7 +125,7 @@ public class PostgresBachecaDAO implements BachecaDAO {
                 bacheche.add(new Bacheca(
                         rs.getInt("id"),
                         TitoloBacheca.fromString(rs.getString(COLUMN_TITOLO)),
-                        rs.getString("descrizione"),
+                        rs.getString(COLUMN_DESCRIZIONE),
                         rs.getInt(COLUMN_ID_UTENTE)
                 ));
             }
@@ -136,7 +143,7 @@ public class PostgresBachecaDAO implements BachecaDAO {
      */
     @Override
     public void updateBacheca(Bacheca bacheca) {
-        String sql = "UPDATE bacheca SET descrizione = ? WHERE id = ?";
+        String sql = "UPDATE " + TABLE_NAME + " SET " + COLUMN_DESCRIZIONE + " = ? WHERE id = ?";
         try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
             stmt.setString(1, bacheca.getDescrizione());
             stmt.setInt(2, bacheca.getId());
@@ -173,7 +180,7 @@ public class PostgresBachecaDAO implements BachecaDAO {
      */
     @Override
     public Bacheca getBachecaByTitoloAndUtente(String titolo, int idUtente) {
-        String sql = "SELECT * FROM bacheca WHERE " + COLUMN_TITOLO + " = ? AND " + COLUMN_ID_UTENTE + " = ?";
+        String sql = SELECT_ALL_QUERY + " WHERE " + COLUMN_TITOLO + " = ? AND " + COLUMN_ID_UTENTE + " = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, titolo);
             stmt.setInt(2, idUtente);
@@ -182,7 +189,7 @@ public class PostgresBachecaDAO implements BachecaDAO {
                 return new Bacheca(
                         rs.getInt("id"),
                         TitoloBacheca.fromString(rs.getString(COLUMN_TITOLO)),
-                        rs.getString("descrizione"),
+                        rs.getString(COLUMN_DESCRIZIONE),
                         rs.getInt(COLUMN_ID_UTENTE)
                 );
             }

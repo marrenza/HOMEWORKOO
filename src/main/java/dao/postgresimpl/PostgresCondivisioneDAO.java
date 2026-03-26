@@ -1,7 +1,6 @@
 package dao.postgresimpl;
 
 import dao.CondivisioneDAO;
-import database.DatabaseConnection;
 import model.Condivisione;
 import java.sql.*;
 import java.util.ArrayList;
@@ -19,6 +18,12 @@ import java.util.logging.Logger;
  * @version 1.0
  */
 public class PostgresCondivisioneDAO implements CondivisioneDAO {
+    private static final String COLUMN_ID_UTENTE = "id_utente";
+    private static final String COLUMN_ID_TODO = "id_todo";
+    private static final String TABLE_NAME = "condivisione";
+
+    // Questa costante risolve l'errore "SELECT *" e previene i duplicati delle stringhe
+    private static final String SELECT_ALL_QUERY = "SELECT " + COLUMN_ID_UTENTE + ", " + COLUMN_ID_TODO + " FROM " + TABLE_NAME;
     /** La connessione attiva al database. */
     private final Connection connection;
 
@@ -87,14 +92,14 @@ public class PostgresCondivisioneDAO implements CondivisioneDAO {
     @Override
     public List<Condivisione> getCondivisioniByToDoId(int todoId) {
         List<Condivisione> condivisioni = new ArrayList<>();
-        String sql = "SELECT * FROM condivisione WHERE id_todo = ?";
+        String sql = SELECT_ALL_QUERY + " WHERE " + COLUMN_ID_TODO + " = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, todoId);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 condivisioni.add(new Condivisione(
-                        rs.getInt("id_utente"),
-                        rs.getInt("id_todo")
+                        rs.getInt(COLUMN_ID_UTENTE),
+                        rs.getInt(COLUMN_ID_TODO)
                 ));
             }
         } catch (SQLException e) {
@@ -114,15 +119,15 @@ public class PostgresCondivisioneDAO implements CondivisioneDAO {
     @Override
     public List<Condivisione> getCondivisioniByUtenteId(int utenteId) {
         List<Condivisione> condivisioni = new ArrayList<>();
-        String sql = "SELECT * FROM condivisione WHERE id_utente = ?";
+        String sql = SELECT_ALL_QUERY + " WHERE " + COLUMN_ID_UTENTE + " = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, utenteId);
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
                 condivisioni.add(new Condivisione(
-                        rs.getInt("id_utente"),
-                        rs.getInt("id_todo")
+                        rs.getInt(COLUMN_ID_UTENTE),
+                        rs.getInt(COLUMN_ID_TODO)
                 ));
             }
         } catch (SQLException e) {

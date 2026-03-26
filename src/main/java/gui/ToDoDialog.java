@@ -5,8 +5,6 @@ import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,9 +52,6 @@ public class ToDoDialog extends JDialog {
     /** Pulsante per aprire il selettore di file (FileChooser). */
     private JButton btnSfogliaImmagine;
 
-    /** Componente per la selezione del file immagine. */
-    private JFileChooser imageChooser;
-
     /** Etichetta che mostra l'anteprima del colore selezionato. */
     private JLabel lblColoreScelto;
 
@@ -76,6 +71,9 @@ public class ToDoDialog extends JDialog {
 
     /** Pannello scrollabile che contiene la checklist. */
     private JScrollPane checklistScrollPane;
+
+    private static final String MSG_NO_FILE = "Nessun file selezionato.";
+    private static final String MSG_NO_COLOR = " (Nessun colore) ";
 
     /**
      * Costruisce la finestra di dialogo.
@@ -113,10 +111,10 @@ public class ToDoDialog extends JDialog {
 
         txtURL = new JTextField(20);
 
-        lblImagePath = new JLabel("Nessun file selezionato.");
+        lblImagePath = new JLabel(MSG_NO_FILE);
         lblImagePath.setBorder(BorderFactory.createEtchedBorder());
         btnSfogliaImmagine = new JButton("Sfoglia");
-        imageChooser = new JFileChooser();
+        JFileChooser imageChooser = new JFileChooser();
         imageChooser.setFileFilter(new FileNameExtensionFilter("Immagini (jpg, png, gif)", "jpg", "png", "gif"));
 
         btnSfogliaImmagine.addActionListener(e -> {
@@ -127,7 +125,7 @@ public class ToDoDialog extends JDialog {
             }
         });
 
-        lblColoreScelto = new JLabel(" (Nessun colore) ");
+        lblColoreScelto = new JLabel(MSG_NO_COLOR);
         lblColoreScelto.setOpaque(true);
         lblColoreScelto.setBackground(Color.WHITE);
         lblColoreScelto.setBorder(BorderFactory.createEtchedBorder());
@@ -211,9 +209,9 @@ public class ToDoDialog extends JDialog {
         gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2; gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         formPanel.add(checklistScrollPane, gbc);
-        row++;
 
-        gbc.gridx = 0; gbc.gridy = row++; gbc.gridwidth = 2; gbc.weighty = 0.0;
+
+        gbc.gridx = 0; gbc.gridwidth = 2; gbc.weighty = 0.0;
         formPanel.add(btnAddActivity, gbc);
 
         add(formPanel, BorderLayout.CENTER);
@@ -324,7 +322,7 @@ public class ToDoDialog extends JDialog {
      */
     public String getImagePath() {
         String path = lblImagePath.getText();
-        return path.equals("Nessun file selezionato.") ? "" : path;
+        return path.equals(MSG_NO_FILE) ? "" : path;
     }
 
     /**
@@ -369,9 +367,9 @@ public class ToDoDialog extends JDialog {
         txtScadenza.setText("");
         txtURL.setText("");
         cmbBacheca.setSelectedIndex(0);
-        lblImagePath.setText("Nessun file selezionato.");
+        lblImagePath.setText(MSG_NO_FILE);
         hexColoreSelezionato = "";
-        lblColoreScelto.setText(" (Nessun colore) ");
+        lblColoreScelto.setText(MSG_NO_COLOR);
         lblColoreScelto.setBackground(Color.WHITE);
         checklistPanel.removeAll();
         activityNameFields.clear();
@@ -422,7 +420,7 @@ public class ToDoDialog extends JDialog {
      */
     public void setImagePath(String s) {
         if (s == null || s.isEmpty()) {
-            lblImagePath.setText("Nessun file selezionato.");
+            lblImagePath.setText(MSG_NO_FILE);
         } else {
             lblImagePath.setText(s);
         }
@@ -436,7 +434,7 @@ public class ToDoDialog extends JDialog {
     public void setColoreSfondo(String hex) {
         if (hex == null || hex.isEmpty()) {
             hexColoreSelezionato = "";
-            lblColoreScelto.setText(" (Nessun colore) ");
+            lblColoreScelto.setText(MSG_NO_COLOR);
             lblColoreScelto.setBackground(Color.WHITE);
         } else {
             try {
@@ -444,7 +442,7 @@ public class ToDoDialog extends JDialog {
                 hexColoreSelezionato = hex;
                 lblColoreScelto.setBackground(c);
                 lblColoreScelto.setText(hex);
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException _) {
                 setColoreSfondo(null);
             }
         }

@@ -9,15 +9,15 @@ import dao.postgresimpl.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.sql.Connection;
 import java.sql.SQLException;
 
 import gui.RegistrazioneDialog;
 import model.TitoloBacheca;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Controller principale dell'applicazione ToDo Manager.
@@ -36,6 +36,12 @@ import model.TitoloBacheca;
  * @version 1.0
  */
 public class ToDoController {
+    private static final String TITOLO_ERRORE_DB = "Errore DB";
+    private static final String TITOLO_ERRORE = "Errore";
+    private static final String TITOLO_SUCCESSO = "Successo";
+
+    private static final Logger LOGGER = Logger.getLogger(ToDoController.class.getName());
+
     /** La finestra di login iniziale dell'applicazione. */
     private LoginFrame loginFrame;
 
@@ -90,8 +96,8 @@ public class ToDoController {
             this.condivisioneDAO = new PostgresCondivisioneDAO(this.connection);
             this.toDoDAO = new PostgresToDoDAO(this.connection, this.utenteDAO, this.attivitaDAO, this.condivisioneDAO);
         } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Errore fatale di connessione al Database.\n" + e.getMessage(), "Errore DB", JOptionPane.ERROR_MESSAGE);
+            LOGGER.log(Level.SEVERE, "Errore fatale di connessione al Database", e);
+            JOptionPane.showMessageDialog(null, "Errore fatale di connessione al Database.\n" + e.getMessage(), TITOLO_ERRORE_DB, JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
         toDoDialogController = new ToDoDialogController(this);
@@ -120,9 +126,9 @@ public class ToDoController {
                 JOptionPane.showMessageDialog(loginFrame, "Credenziali errate", "Errore login", JOptionPane.ERROR_MESSAGE);
             }
         });
-        loginFrame.getRegisterButton().addActionListener(e -> {
-            openRegistrazioneDialog();
-        });
+        loginFrame.getRegisterButton().addActionListener(e ->
+            openRegistrazioneDialog()
+        );
 
         loginFrame.setVisible(true);
     }
@@ -142,16 +148,16 @@ public class ToDoController {
             String confermaPass = dialog.getConfermaPassword();
 
             if (nome.trim().isEmpty() || login.trim().isEmpty() || pass.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "Tutti i campi sono obbligatori.", "Errore", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Tutti i campi sono obbligatori.", TITOLO_ERRORE, JOptionPane.ERROR_MESSAGE);
                 return;
             }
             if (!pass.equals(confermaPass)) {
-                JOptionPane.showMessageDialog(dialog, "Le password non coincidono.", "Errore", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Le password non coincidono.", TITOLO_ERRORE, JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             if (utenteDAO.getUtenteByLogin(login) != null) {
-                JOptionPane.showMessageDialog(dialog, "Questo login è già in uso. Scegline un altro.", "Errore", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Questo login è già in uso. Scegline un altro.", TITOLO_ERRORE, JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -164,10 +170,10 @@ public class ToDoController {
                 bachecaDAO.addBacheca(uni);
                 bachecaDAO.addBacheca(lavoro);
                 bachecaDAO.addBacheca(tempo);
-                JOptionPane.showMessageDialog(dialog, "Registrazione completata! Ora puoi effettuare il login.", "Successo", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Registrazione completata! Ora puoi effettuare il login.", TITOLO_SUCCESSO, JOptionPane.INFORMATION_MESSAGE);
                 dialog.dispose();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Errore durante il salvataggio nel database.", "Errore DB", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Errore durante il salvataggio nel database.", TITOLO_ERRORE_DB, JOptionPane.ERROR_MESSAGE);
                 ex.printStackTrace();
             }
         });
@@ -384,12 +390,12 @@ public class ToDoController {
             }
         }
         if (currentIndex == -1) {
-            System.err.println("Errore: ToDo non trovato nella lista ordinata.");
+            LOGGER.log(Level.WARNING, "Errore: ToDo con ID {0} non trovato nella lista.", todo.getId());
             return;
         }
         int newIndex = currentIndex + direzione;
         if (newIndex < 0 || newIndex >= todoList.size()) {
-            System.err.println("Errore: Spostamento fuori dai limiti.");
+            LOGGER.log(Level.WARNING, "Tentativo di spostamento ToDo fuori dai limiti (direzione: {0})", direzione);
             return;
         }
 
@@ -456,7 +462,7 @@ public class ToDoController {
             }
             JOptionPane.showMessageDialog(mainFrame, "ToDo aggiunto con successo!");
         } else {
-            JOptionPane.showMessageDialog(mainFrame, "Bacheca non trovata per il titolo: " + bachecaTitle, "Errore", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(mainFrame, "Bacheca non trovata per il titolo: " + bachecaTitle, TITOLO_ERRORE, JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -500,7 +506,7 @@ public class ToDoController {
                 refreshMainFrameToDos();
                 JOptionPane.showMessageDialog(mainFrame, "ToDo eliminato con successo.");
             } else {
-                JOptionPane.showMessageDialog(mainFrame, "Errore nella cancellazione del ToDo.", "Errore", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(mainFrame, "Errore nella cancellazione del ToDo.", TITOLO_ERRORE, JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -550,7 +556,7 @@ public class ToDoController {
             refreshMainFrameToDos();
             JOptionPane.showMessageDialog(mainFrame, "ToDo spostato con successo.");
         } else {
-            JOptionPane.showMessageDialog(mainFrame, "Errore: Bacheca di destinazione non trovata.", "Errore", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(mainFrame, "Errore: Bacheca di destinazione non trovata.", TITOLO_ERRORE, JOptionPane.ERROR_MESSAGE);
             if (sourceBacheca != null) {
                 sourceBacheca.aggiungiToDo(todo);
             }
@@ -578,7 +584,7 @@ public class ToDoController {
      * Gestisce la creazione di una nuova bacheca, se l'utente non ha ancora raggiunto il limite.
      */
     private void openCreaBachecaDialog() {
-        List<TitoloBacheca> titoliPosseduti = utenteCorrente.getBacheche().stream().map(Bacheca::getTitolo).collect(Collectors.toList());
+        List<TitoloBacheca> titoliPosseduti = utenteCorrente.getBacheche().stream().map(Bacheca::getTitolo).toList();
         List<TitoloBacheca> titoliDisponibili = new ArrayList<>();
         for(TitoloBacheca t : TitoloBacheca.values()) {
             if(!titoliPosseduti.contains(t)) {
@@ -613,13 +619,13 @@ public class ToDoController {
      */
     private void openEliminaBachecaDialog() {
         if(utenteCorrente.getBacheche().size() <= 1) {
-            JOptionPane.showMessageDialog(mainFrame, "Non puoi eliminare l'ultima bacheca. Deve rimanerne almeno una.", "Errore", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(mainFrame, "Non puoi eliminare l'ultima bacheca. Deve rimanerne almeno una.", TITOLO_ERRORE, JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         List<TitoloBacheca> titoliPosseduti = utenteCorrente.getBacheche().stream()
                 .map(Bacheca::getTitolo)
-                .collect(Collectors.toList());
+                .toList();
 
         TitoloBacheca titoloDaEliminare = (TitoloBacheca) JOptionPane.showInputDialog(
                 mainFrame, "Scegli quale bacheca eliminare:",
@@ -645,7 +651,7 @@ public class ToDoController {
                         refreshMainFrameToDos();
                         JOptionPane.showMessageDialog(mainFrame, "Bacheca eliminata con successo.");
                     } catch (Exception e) {
-                        JOptionPane.showMessageDialog(mainFrame, "Errore durante l'eliminazione dal database.", "Errore DB", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(mainFrame, "Errore durante l'eliminazione dal database.", TITOLO_ERRORE_DB, JOptionPane.ERROR_MESSAGE);
                         e.printStackTrace();
                     }
                 }
@@ -681,14 +687,14 @@ public class ToDoController {
         JPanel infoPanel = new JPanel(new BorderLayout(10, 10));
         infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        if(todo.getImaginePath() != null && !todo.getImaginePath().isEmpty()) {
+        if(todo.getImagePath() != null && !todo.getImagePath().isEmpty()) {
             try {
-                ImageIcon icon = new ImageIcon(todo.getImaginePath());
+                ImageIcon icon = new ImageIcon(todo.getImagePath());
                 Image image = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
                 JLabel imageLabel = new JLabel(new ImageIcon(image));
                 imageLabel.setBorder(BorderFactory.createEtchedBorder());
                 infoPanel.add(imageLabel, BorderLayout.WEST);
-            } catch (Exception e) {
+            } catch (Exception _) {
                 infoPanel.add(new JLabel("Immagine non trovata."), BorderLayout.WEST);
             }
         }
@@ -785,7 +791,7 @@ public class ToDoController {
             JOptionPane.showMessageDialog(mainFrame, "ToDo modificato con successo!");
 
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(mainFrame, "Errore aggiornamento ToDo.", "Errore DB", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(mainFrame, "Errore aggiornamento ToDo.", TITOLO_ERRORE_DB, JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
     }
@@ -817,11 +823,11 @@ public class ToDoController {
                 refreshMainFrameToDos();
                 JOptionPane.showMessageDialog(mainFrame, "ToDo aggiunto con successo!");
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(mainFrame, "Errore salvataggio nuovo ToDo.", "Errore DB", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(mainFrame, "Errore salvataggio nuovo ToDo.", TITOLO_ERRORE_DB, JOptionPane.ERROR_MESSAGE);
                 e.printStackTrace();
             }
         } else {
-            JOptionPane.showMessageDialog(mainFrame, "Bacheca di destinazione non trovata.", "Errore", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(mainFrame, "Bacheca di destinazione non trovata.", TITOLO_ERRORE, JOptionPane.ERROR_MESSAGE);
         }
     }
 

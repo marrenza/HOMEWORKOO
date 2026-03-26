@@ -26,7 +26,7 @@ public class BachecaPanel extends JPanel {
     private List<ToDoPanel> currentToDoPanels;
 
     /** Il modello dati della bacheca associata a questo pannello. */
-    private Bacheca bacheca;
+    private transient Bacheca bacheca;
 
 
     /** Etichetta per il titolo della bacheca. */
@@ -38,6 +38,7 @@ public class BachecaPanel extends JPanel {
     /** Pulsante per modificare la descrizione della bacheca. */
     private JButton modifyDescButton;
 
+    private static final String FONT_NAME = "Segoe UI";
     /**
      * Costruisce il pannello grafico per una specifica bacheca.
      * Imposta il layout, lo stile grafico (sfondo blu scuro) e inizializza
@@ -55,16 +56,16 @@ public class BachecaPanel extends JPanel {
 
         titoloLabel = new JLabel(bacheca.getTitolo().toString(), SwingConstants.CENTER);
         titoloLabel.setForeground(Color.WHITE);
-        titoloLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titoloLabel.setFont(new Font(FONT_NAME, Font.BOLD, 16));
         headerPanel.add(titoloLabel, BorderLayout.NORTH);
 
         descrizioneLabel = new JLabel(bacheca.getDescrizione(), SwingConstants.CENTER);
         descrizioneLabel.setForeground(Color.LIGHT_GRAY);
-        descrizioneLabel.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        descrizioneLabel.setFont(new Font(FONT_NAME, Font.ITALIC, 12));
         headerPanel.add(descrizioneLabel, BorderLayout.CENTER);
 
         modifyDescButton = new JButton("Modifica descrizione");
-        modifyDescButton.setFont(new Font("Segoe UI", Font.PLAIN, 10));
+        modifyDescButton.setFont(new Font(FONT_NAME, Font.PLAIN, 10));
         modifyDescButton.setMargin(new Insets(2, 5, 2, 5));
         modifyDescButton.setFocusPainted(false);
         headerPanel.add(modifyDescButton, BorderLayout.EAST);

@@ -1,8 +1,6 @@
 package gui;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
-
 /**
  * Finestra iniziale per l'autenticazione dell'utente nel sistema ToDo Manager.
  * Questa classe estende {@link JFrame} e fornisce l'interfaccia grafica per il login.
@@ -25,6 +23,8 @@ public class LoginFrame extends JFrame {
     /** Pulsante per aprire la finestra di registrazione di un nuovo utente. */
     private JButton registerButton;
 
+    private static final String FONT_NAME = "Segoe UI";
+
     /**
      * Costruttore che inizializza e configura la finestra di login.
      * Imposta le dimensioni, il layout (GridBagLayout), i colori e lo stile dei componenti.
@@ -33,14 +33,14 @@ public class LoginFrame extends JFrame {
     public LoginFrame() {
         setTitle("Login - ToDo Manager");
         setSize(400, 300);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         getContentPane().setBackground(Color.WHITE);
         setLocationRelativeTo(null);
         setLayout(new GridBagLayout());
 
         JLabel welcomeLabel = new JLabel("Benvenuto!");
         welcomeLabel.setForeground(new Color(6, 0, 64));
-        welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        welcomeLabel.setFont(new Font(FONT_NAME, Font.BOLD, 28));
 
         JLabel userLabel = new JLabel("Username:");
         JLabel passLabel = new JLabel("Password:");
@@ -51,10 +51,10 @@ public class LoginFrame extends JFrame {
 
         userLabel.setForeground(Color.BLACK);
         passLabel.setForeground(Color.BLACK);
-        userLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        passLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        userLabel.setFont(new Font(FONT_NAME, Font.PLAIN, 14));
+        passLabel.setFont(new Font(FONT_NAME, Font.PLAIN, 14));
 
-        Font buttonFont = new Font("Segoe UI", Font.BOLD, 14);
+        Font buttonFont = new Font(FONT_NAME, Font.BOLD, 14);
         Color buttonBg = new Color(83, 69, 230);
         Color buttonFg = Color.WHITE;
 

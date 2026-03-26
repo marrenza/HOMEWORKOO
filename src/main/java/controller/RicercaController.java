@@ -86,7 +86,7 @@ public class RicercaController {
                 return;
             }
             showSearchResults(results);
-        } catch (DateTimeParseException e) {
+        } catch (DateTimeParseException _) {
             JOptionPane.showMessageDialog(searchDialog, "Formato data non valido. Usa YYYY-MM-DD.", "Errore", JOptionPane.ERROR_MESSAGE);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(searchDialog, "Errore durante la ricerca.", "Errore DB", JOptionPane.ERROR_MESSAGE);

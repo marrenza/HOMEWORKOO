@@ -20,9 +20,6 @@ public class ShareDialog extends JDialog {
     /** Componente grafico che visualizza la lista degli utenti. */
     private JList<Utente> userList;
 
-    /** Modello dei dati sottostante alla JList. */
-    private DefaultListModel<Utente> userListModel;
-
     /** Pulsante per confermare la condivisione con gli utenti selezionati. */
     private JButton btnCondividi;
 
@@ -56,7 +53,7 @@ public class ShareDialog extends JDialog {
      * @param availableUsers La lista di utenti da inserire nel modello.
      */
     private void initComponents(List<Utente> availableUsers) {
-        userListModel = new DefaultListModel<>();
+        DefaultListModel<Utente> userListModel = new DefaultListModel<>();
         for (Utente user : availableUsers) {
             userListModel.addElement(user);
         }
@@ -66,8 +63,8 @@ public class ShareDialog extends JDialog {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof Utente) {
-                    setText(((Utente) value).getNome() + " (" + ((Utente) value).getLogin() + ")");
+                if (value instanceof Utente utente) {
+                    setText(utente.getNome() + " (" + utente.getLogin()+ ")");
                 }
                 return this;
             }

@@ -2,6 +2,8 @@ package model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Rappresenta un utente registrato nel sistema.
@@ -13,6 +15,8 @@ import java.util.List;
  * @version 1.0
  */
 public class Utente {
+    private static final Logger LOGGER = Logger.getLogger(Utente.class.getName());
+
     /** L'identificativo univoco dell'utente nel database. */
     private int id;
 
@@ -33,6 +37,8 @@ public class Utente {
      * Inizializzata come lista vuota per evitare NullPointerException.
      */
     private List<Bacheca> bacheche = new ArrayList<>();
+
+
 
     /**
      * Costruttore completo per creare un oggetto Utente (solitamente dal database).
@@ -148,7 +154,7 @@ public class Utente {
             bacheche.add(bacheca);
             bacheca.setProprietario(this);
         } else {
-            System.err.println("Un utente può avere al massimo 3 bacheche");
+            LOGGER.log(Level.WARNING, "Impossibile aggiungere la bacheca: l''utente {0} ha già raggiunto il limite massimo di 3.", nome);
         }
     }
 

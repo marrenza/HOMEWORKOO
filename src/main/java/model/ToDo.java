@@ -26,10 +26,10 @@ public class ToDo {
     private LocalDate scadenza;
 
     /** Percorso locale del file immagine associato al ToDo. */
-    private String imaginePath;
+    private String imagePath;
 
     /** Link (URL) a una risorsa esterna correlata. */
-    private String URL;
+    private String url;
 
     /** Codice esadecimale del colore di sfondo per la visualizzazione grafica. */
     private String coloreSfondo;
@@ -66,20 +66,20 @@ public class ToDo {
      * @param titolo       Il titolo dell'attività.
      * @param descrizione  La descrizione dell'attività.
      * @param scadenza     La data di scadenza.
-     * @param imaginePath  Il percorso dell'immagine associata.
-     * @param URL          Un URL correlato.
+     * @param imagePath  Il percorso dell'immagine associata.
+     * @param url          Un URL correlato.
      * @param coloreSfondo Il colore di sfondo preferito.
      * @param posizione    La posizione nella lista.
      * @param autore       L'utente autore del ToDo.
      */
     public ToDo(int id, String titolo, String descrizione, LocalDate scadenza,
-                String imaginePath, String URL, String coloreSfondo, int posizione, Utente autore) {
+                String imagePath, String url, String coloreSfondo, int posizione, Utente autore) {
         this.id = id;
         this.titolo = titolo;
         this.descrizione = descrizione;
         this.scadenza = scadenza;
-        this.imaginePath = imaginePath;
-        this.URL = URL;
+        this.imagePath = imagePath;
+        this.url = url;
         this.coloreSfondo = coloreSfondo;
         this.posizione = posizione;
         this.stato = StatoToDo.NON_COMPLETATO;
@@ -157,16 +157,16 @@ public class ToDo {
      * Restituisce il percorso dell'immagine associata.
      * @return Il path del file immagine.
      */
-    public String getImaginePath() {
-        return imaginePath;
+    public String getImagePath() {
+        return imagePath;
     }
 
     /**
      * Imposta il percorso dell'immagine.
-     * @param imaginePath Il percorso del file.
+     * @param imagePath Il percorso del file.
      */
-    public void setImaginePath(String imaginePath) {
-        this.imaginePath = imaginePath;
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
     }
 
     /**
@@ -174,15 +174,15 @@ public class ToDo {
      * @return L'indirizzo URL come stringa.
      */
     public String getURL() {
-        return URL;
+        return url;
     }
 
     /**
      * Imposta l'URL associato.
-     * @param URL Il nuovo URL.
+     * @param url Il nuovo URL.
      */
-    public void setURL(String URL) {
-        this.URL = URL;
+    public void setURL(String url) {
+        this.url = url;
     }
 
     /**

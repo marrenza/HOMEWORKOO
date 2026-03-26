@@ -3,12 +3,14 @@ package gui;
 import model.StatoAttivita;
 import model.ToDo;
 import model.StatoToDo;
-import model.Attivita; // <-- IMPORTA Attivita
+import model.Attivita;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
-import java.util.ArrayList; // <-- IMPORTA ArrayList
-import java.util.List; // <-- IMPORTA List
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * Pannello grafico che rappresenta un singolo ToDo all'interno di una bacheca.
@@ -32,7 +34,7 @@ public class ToDoPanel extends JPanel {
     private JCheckBox completatoCheckbox;
 
     /** Il modello dati del ToDo associato a questo pannello. */
-    private ToDo toDo;
+    private transient ToDo toDo;
 
     /** Pannello destro contenente il menu e la checkbox. */
     private JPanel eastPanel;
@@ -43,6 +45,9 @@ public class ToDoPanel extends JPanel {
     /** Lista delle checkbox relative alle sotto-attività della checklist. */
     private List<JCheckBox> subTaskCheckboxes;
 
+    private static final String FONT_NAME = "Segoe UI";
+
+    private static final Logger LOGGER = Logger.getLogger(ToDoPanel.class.getName());
     /**
      * Costruisce il pannello grafico per un singolo ToDo.
      * Configura il layout verticale per ospitare eventualmente la checklist sotto il titolo.
@@ -68,7 +73,7 @@ public class ToDoPanel extends JPanel {
         mainInfoPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 
         titleLabel = new JLabel(toDo.getTitolo());
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        titleLabel.setFont(new Font(FONT_NAME, Font.BOLD, 14));
         mainInfoPanel.add(titleLabel, BorderLayout.CENTER);
 
         eastPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
@@ -107,7 +112,7 @@ public class ToDoPanel extends JPanel {
                 JCheckBox subCb = new JCheckBox(a.getNome());
                 subCb.setSelected(a.getStato() == StatoAttivita.COMPLETATO);
                 subCb.setOpaque(false);
-                subCb.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                subCb.setFont(new Font(FONT_NAME, Font.PLAIN, 12));
 
                 subCb.putClientProperty("ATTIVITA_OBJ", a);
 
@@ -126,7 +131,7 @@ public class ToDoPanel extends JPanel {
      * @param button Il pulsante da stilizzare.
      */
     private void styleMiniButton(JButton button) {
-        button.setFont(new Font("Segoe UI", Font.BOLD, 10));
+        button.setFont(new Font(FONT_NAME, Font.BOLD, 10));
         button.setMargin(new Insets(2, 5, 2, 5));
         button.setFocusPainted(false);
     }
@@ -155,8 +160,9 @@ public class ToDoPanel extends JPanel {
         if(toDo.getColoreSfondo() != null && !toDo.getColoreSfondo().isEmpty()) {
             try {
                 bgColor = Color.decode(toDo.getColoreSfondo());
-            } catch (NumberFormatException ex) {
-                System.err.println("Formato colore non valido per ToDo " + toDo.getId() + ": " + toDo.getColoreSfondo());
+            } catch (NumberFormatException _) {
+                LOGGER.log(Level.WARNING, "Formato colore non valido per ToDo {0}: {1}",
+                        new Object[]{toDo.getId(), toDo.getColoreSfondo()});
             }
         }
         setBackground(bgColor);

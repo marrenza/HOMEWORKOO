@@ -4,10 +4,7 @@ import gui.ShareDialog;
 import model.Condivisione;
 import model.ToDo;
 import model.Utente;
-import model.TitoloBacheca;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
 import java.util.logging.Logger;
 
@@ -24,8 +21,6 @@ public class CondivisioneController {
     /** Riferimento al controller principale per accedere a utenti e DAO. */
     private ToDoController mainController;
 
-    /** Finestra di dialogo per la selezione multipla degli utenti. */
-    private ShareDialog shareDialog;
 
     private static final Logger logger = Logger.getLogger(CondivisioneController.class.getName());
 
@@ -49,9 +44,9 @@ public class CondivisioneController {
     public void openShareToDoDialog(ToDo toDoToShare) {
         List<Utente> otherUsers = mainController.getUtentiRegistrati().stream()
                 .filter(u -> u.getId() != mainController.getUtenteCorrente().getId())
-                .collect(Collectors.toList());
+                .toList();
 
-        shareDialog = new ShareDialog(null, "Condividi ToDo: " + toDoToShare.getTitolo(), true, otherUsers);
+        ShareDialog shareDialog = new ShareDialog(null, "Condividi ToDo: " + toDoToShare.getTitolo(), true, otherUsers);
         shareDialog.getBtnCondividi().addActionListener(e -> {
             List<Utente> selectedUsers = shareDialog.getSelectedUsers();
             if (selectedUsers.isEmpty()) {
@@ -161,7 +156,7 @@ public class CondivisioneController {
 
         List<Utente> sharedUsers = todo.getCondivisioni().stream()
                 .map(Condivisione::getUtente)
-                .collect(Collectors.toList());
+                .toList();
 
         String[] userNames = sharedUsers.stream().map(Utente::getNome).toArray(String[]::new);
 

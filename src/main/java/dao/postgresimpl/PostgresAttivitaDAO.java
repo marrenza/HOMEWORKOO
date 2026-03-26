@@ -1,7 +1,6 @@
 package dao.postgresimpl;
 
 import dao.AttivitaDAO;
-import database.DatabaseConnection;
 import model.Attivita;
 import model.StatoAttivita;
 
@@ -75,7 +74,7 @@ public class PostgresAttivitaDAO implements AttivitaDAO {
     @Override
     public List<Attivita> getAttivitaByToDoId(int todoId) {
         List<Attivita> attivitaList = new ArrayList<>();
-        String sql = "SELECT * FROM attivita WHERE id_todo = ?";
+        String sql = "SELECT id, id_todo, nome, stato FROM attivita WHERE id_todo = ?";
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, todoId);

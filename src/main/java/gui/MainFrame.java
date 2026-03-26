@@ -2,7 +2,6 @@ package gui;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 
 /**
  * La finestra principale (Dashboard) dell'applicazione ToDo Manager.
@@ -48,12 +47,12 @@ public class MainFrame extends JFrame {
     public MainFrame(String username){
         setTitle("ToDo Manager - Bacheche");
         setSize(1000, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
         setResizable(true);
-        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setExtendedState(Frame.MAXIMIZED_BOTH);
 
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(new Color(6, 0, 64));

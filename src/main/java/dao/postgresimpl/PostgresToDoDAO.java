@@ -4,7 +4,6 @@ import dao.ToDoDAO;
 import dao.UtenteDAO;
 import dao.AttivitaDAO;
 import dao.CondivisioneDAO;
-import database.DatabaseConnection;
 import model.*;
 import java.sql.*;
 import java.util.ArrayList;
@@ -35,9 +34,9 @@ public class PostgresToDoDAO implements ToDoDAO {
     private static final Logger logger = Logger.getLogger(PostgresToDoDAO.class.getName());
 
     private static final String COL_STATO = "stato";
-    private static final String COL_POSIZIONE = "posizione";
     private static final String COL_ID_AUTORE = "id_autore";
     private static final String COL_ID_BACHECA = "id_bacheca";
+    private static final String SELECT_COLUMNS = "id, titolo, descrizione, scadenza, image_path, url, colore_sfondo, stato, posizione, id_autore, id_bacheca";
 
     /**
      * Costruttore della classe.
@@ -70,7 +69,7 @@ public class PostgresToDoDAO implements ToDoDAO {
             stmt.setString(1, todo.getTitolo());
             stmt.setString(2, todo.getDescrizione());
             stmt.setDate(3, java.sql.Date.valueOf(todo.getScadenza()));
-            stmt.setString(4, todo.getImaginePath());
+            stmt.setString(4, todo.getImagePath());
             stmt.setString(5, todo.getURL());
             stmt.setString(6, todo.getColoreSfondo());
 
@@ -100,7 +99,7 @@ public class PostgresToDoDAO implements ToDoDAO {
      */
     @Override
     public ToDo getToDoById(int id) {
-        String sql = "SELECT * FROM todo WHERE id = ?";
+        String sql = "SELECT " + SELECT_COLUMNS + " FROM todo WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
 
@@ -122,7 +121,7 @@ public class PostgresToDoDAO implements ToDoDAO {
     @Override
     public List<ToDo> getAllToDo() {
         List<ToDo> todos = new ArrayList<>();
-        String sql = "SELECT * FROM todo ORDER BY posizione ASC";
+        String sql = "SELECT " + SELECT_COLUMNS + " FROM todo ORDER BY posizione ASC";
 
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -151,7 +150,7 @@ public class PostgresToDoDAO implements ToDoDAO {
             stmt.setString(1, todo.getTitolo());
             stmt.setString(2, todo.getDescrizione());
             stmt.setDate(3, java.sql.Date.valueOf(todo.getScadenza()));
-            stmt.setString(4, todo.getImaginePath());
+            stmt.setString(4, todo.getImagePath());
             stmt.setString(5, todo.getURL());
             stmt.setString(6, todo.getColoreSfondo());
             stmt.setString(7, todo.getStato().name());

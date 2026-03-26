@@ -21,9 +21,6 @@ public class DatabaseConnection {
     /** L'unica istanza condivisa della connessione (Singleton). */
     private static Connection connection = null;
 
-    /** Nome del database a cui connettersi. */
-    private static final String DBNAME = "todo_manager_db";
-
     /** Username per l'accesso al database. */
     private static final String USER = "postgres";
 

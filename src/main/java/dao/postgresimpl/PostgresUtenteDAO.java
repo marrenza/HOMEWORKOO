@@ -1,7 +1,6 @@
 package dao.postgresimpl;
 
 import dao.UtenteDAO;
-import database.DatabaseConnection;
 import model.Utente;
 
 import java.sql.*;
@@ -24,6 +23,13 @@ public class PostgresUtenteDAO implements UtenteDAO{
 
     /** Logger per la gestione degli errori SQL. */
     private static final Logger LOGGER = Logger.getLogger(PostgresUtenteDAO.class.getName());
+
+    private static final String TABLE_NAME = "utente";
+    private static final String COL_ID = "id";
+    private static final String COL_NOME = "nome";
+    private static final String COL_LOGIN = "login";
+    private static final String COL_PASSWORD = "password";
+    private static final String SELECT_ALL_QUERY = "SELECT " + COL_ID + ", " + COL_NOME + ", " + COL_LOGIN + ", " + COL_PASSWORD + " FROM " + TABLE_NAME;
 
     /**
      * Costruttore della classe DAO.
@@ -66,23 +72,22 @@ public class PostgresUtenteDAO implements UtenteDAO{
      */
     @Override
     public Utente getUtenteById(int id) {
-        String sql = "SELECT * FROM utente WHERE id = ?";
+        String sql = SELECT_ALL_QUERY + " WHERE " + COL_ID + " = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
-
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 return new Utente(
-                        rs.getInt("id"),
-                        rs.getString("nome"),
-                        rs.getString("login"),
-                        rs.getString("password")
+                        rs.getInt(COL_ID),
+                        rs.getString(COL_NOME),
+                        rs.getString(COL_LOGIN), // <--- Usa la costante
+                        rs.getString(COL_PASSWORD) // <--- Usa la costante
                 );
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Errore getUtenteById", e);
         }
-        return null; // Non trovato
+        return null;
     }
 
     /**
@@ -94,24 +99,23 @@ public class PostgresUtenteDAO implements UtenteDAO{
      */
     @Override
     public Utente getUtenteByLogin(String login) {
-        String sql = "SELECT * FROM utente WHERE login = ?";
+        String sql = SELECT_ALL_QUERY + " WHERE " + COL_ID + " = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, login);
 
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                // Usa il TUO costruttore a 4 parametri
                 return new Utente(
-                        rs.getInt("id"),
-                        rs.getString("nome"),
-                        rs.getString("login"),
-                        rs.getString("password")
+                        rs.getInt(COL_ID),
+                        rs.getString(COL_NOME),
+                        rs.getString(COL_LOGIN),
+                        rs.getString(COL_PASSWORD)
                 );
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Errore getUtenteByLogin", e);
         }
-        return null; // Non trovato
+        return null;
     }
 
     /**
@@ -122,18 +126,16 @@ public class PostgresUtenteDAO implements UtenteDAO{
     @Override
     public List<Utente> getAllUtenti() {
         List<Utente> utenti = new ArrayList<>();
-        String sql = "SELECT * FROM utente";
+        String sql = SELECT_ALL_QUERY;
 
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-
             while (rs.next()) {
-                // Usa il TUO costruttore a 4 parametri
                 utenti.add(new Utente(
-                        rs.getInt("id"),
-                        rs.getString("nome"),
-                        rs.getString("login"),
-                        rs.getString("password")
+                        rs.getInt(COL_ID),
+                        rs.getString(COL_NOME),
+                        rs.getString(COL_LOGIN),
+                        rs.getString(COL_PASSWORD)
                 ));
             }
         } catch (SQLException e) {
