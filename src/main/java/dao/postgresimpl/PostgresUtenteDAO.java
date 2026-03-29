@@ -27,9 +27,10 @@ public class PostgresUtenteDAO implements UtenteDAO{
     private static final String TABLE_NAME = "utente";
     private static final String COL_ID = "id";
     private static final String COL_NOME = "nome";
+    private static final String COL_COGNOME = "cognome";
     private static final String COL_LOGIN = "login";
     private static final String COL_PASSWORD = "password";
-    private static final String SELECT_ALL_QUERY = "SELECT " + COL_ID + ", " + COL_NOME + ", " + COL_LOGIN + ", " + COL_PASSWORD + " FROM " + TABLE_NAME;
+    private static final String SELECT_ALL_QUERY = "SELECT " + COL_ID + ", " + COL_NOME + ", " + COL_COGNOME + ", " + COL_LOGIN + ", " + COL_PASSWORD + " FROM " + TABLE_NAME;
 
     /**
      * Costruttore della classe DAO.
@@ -52,6 +53,7 @@ public class PostgresUtenteDAO implements UtenteDAO{
         String sql = "INSERT INTO utente (nome, login, password) VALUES (?, ?, ?) RETURNING id";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, utente.getNome());
+            stmt.setString(1, utente.getCognome());
             stmt.setString(2, utente.getLogin());
             stmt.setString(3, utente.getPassword());
 
@@ -80,8 +82,9 @@ public class PostgresUtenteDAO implements UtenteDAO{
                 return new Utente(
                         rs.getInt(COL_ID),
                         rs.getString(COL_NOME),
-                        rs.getString(COL_LOGIN), // <--- Usa la costante
-                        rs.getString(COL_PASSWORD) // <--- Usa la costante
+                        rs.getString(COL_COGNOME),
+                        rs.getString(COL_LOGIN),
+                        rs.getString(COL_PASSWORD)
                 );
             }
         } catch (SQLException e) {
@@ -99,7 +102,7 @@ public class PostgresUtenteDAO implements UtenteDAO{
      */
     @Override
     public Utente getUtenteByLogin(String login) {
-        String sql = SELECT_ALL_QUERY + " WHERE " + COL_ID + " = ?";
+        String sql = SELECT_ALL_QUERY + " WHERE " + COL_LOGIN + " = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, login);
 
@@ -108,6 +111,7 @@ public class PostgresUtenteDAO implements UtenteDAO{
                 return new Utente(
                         rs.getInt(COL_ID),
                         rs.getString(COL_NOME),
+                        rs.getString(COL_COGNOME),
                         rs.getString(COL_LOGIN),
                         rs.getString(COL_PASSWORD)
                 );
@@ -134,6 +138,7 @@ public class PostgresUtenteDAO implements UtenteDAO{
                 utenti.add(new Utente(
                         rs.getInt(COL_ID),
                         rs.getString(COL_NOME),
+                        rs.getString(COL_COGNOME),
                         rs.getString(COL_LOGIN),
                         rs.getString(COL_PASSWORD)
                 ));
@@ -154,6 +159,7 @@ public class PostgresUtenteDAO implements UtenteDAO{
         String sql = "UPDATE utente SET nome = ?, login = ?, password = ? WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, utente.getNome());
+            stmt.setString(1, utente.getCognome());
             stmt.setString(2, utente.getLogin());
             stmt.setString(3, utente.getPassword());
             stmt.setInt(4, utente.getId());

@@ -143,11 +143,12 @@ public class ToDoController {
 
         dialog.getBtnConferma().addActionListener(e -> {
             String nome = dialog.getNome();
+            String cognome = dialog.getCognome();
             String login = dialog.getLogin();
             String pass = dialog.getPassword();
             String confermaPass = dialog.getConfermaPassword();
 
-            if (nome.trim().isEmpty() || login.trim().isEmpty() || pass.trim().isEmpty()) {
+            if (nome.trim().isEmpty() || cognome.trim().isEmpty() || login.trim().isEmpty() || pass.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(dialog, "Tutti i campi sono obbligatori.", TITOLO_ERRORE, JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -162,7 +163,7 @@ public class ToDoController {
             }
 
             try {
-                Utente nuovoUtente = new Utente(nome, login, pass);
+                Utente nuovoUtente = new Utente(nome, cognome, login, pass);
                 utenteDAO.addUtente(nuovoUtente);
                 Bacheca uni = new Bacheca(0, TitoloBacheca.UNIVERSITA, "Attività universitarie", nuovoUtente.getId());
                 Bacheca lavoro = new Bacheca(0, TitoloBacheca.LAVORO, "Attività lavorative", nuovoUtente.getId());

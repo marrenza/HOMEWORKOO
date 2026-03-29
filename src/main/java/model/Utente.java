@@ -20,8 +20,12 @@ public class Utente {
     /** L'identificativo univoco dell'utente nel database. */
     private int id;
 
-    /** Il nome completo o visualizzato dell'utente. */
+    /** Il nome dell'utente. */
     private String nome;
+
+    /** Il cognome dell'utente. */
+    private String cognome;
+
 
     /** Il nome utente usato per il login (deve essere univoco). */
     private String login;
@@ -48,9 +52,10 @@ public class Utente {
      * @param login    Il login (username).
      * @param password La password.
      */
-    public Utente(int id, String nome, String login, String password) {
+    public Utente(int id, String nome, String cognome, String login, String password) {
         this.id = id;
         this.nome = nome;
+        this.cognome = cognome;
         this.login = login;
         this.password = password;
     }
@@ -63,9 +68,10 @@ public class Utente {
      * @param login    Il login (username).
      * @param password La password scelta.
      */
-    public Utente(String nome, String login, String password) {
+    public Utente(String nome, String cognome, String login, String password) {
         this.id = 0;
         this.nome = nome;
+        this.cognome = cognome;
         this.login = login;
         this.password = password;
     }
@@ -88,7 +94,7 @@ public class Utente {
 
     /**
      * Restituisce il nome dell'utente.
-     * @return Il nome completo.
+     * @return Il nome.
      */
     public String getNome() {
         return nome;
@@ -101,6 +107,17 @@ public class Utente {
     public void setNome(String nome) {
         this.nome = nome;
     }
+
+    /**
+     * Restituisce il cognome dell'utente.
+     * @return Il cognome.
+     */
+    public String getCognome() { return cognome; }
+
+    /** Imposta il cognome dell'utente.
+     * @param cognome Il nuovo cognome.
+     */
+    public void setCognome(String cognome) { this.cognome = cognome; }
 
     /**
      * Restituisce il login (username) dell'utente.

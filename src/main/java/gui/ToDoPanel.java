@@ -30,6 +30,9 @@ public class ToDoPanel extends JPanel {
     /** Etichetta per il titolo del ToDo. */
     private JLabel titleLabel;
 
+    /** Etichetta per la scadenza del ToDo. */
+    private JLabel dateLabel;
+
     /** Checkbox principale per segnare il ToDo come completato. */
     private JCheckBox completatoCheckbox;
 
@@ -70,11 +73,26 @@ public class ToDoPanel extends JPanel {
 
         JPanel mainInfoPanel = new JPanel(new BorderLayout(10, 0));
         mainInfoPanel.setOpaque(false);
-        mainInfoPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        mainInfoPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+
+        JPanel titleContainer = new JPanel();
+        titleContainer.setLayout((new BoxLayout(titleContainer, BoxLayout.Y_AXIS)));
+        titleContainer.setOpaque(false);
 
         titleLabel = new JLabel(toDo.getTitolo());
         titleLabel.setFont(new Font(FONT_NAME, Font.BOLD, 14));
-        mainInfoPanel.add(titleLabel, BorderLayout.CENTER);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        titleContainer.add(titleLabel);
+
+        if(toDo.getScadenza() != null) {
+            dateLabel = new JLabel("Scadenza: " + toDo.getScadenza().toString());
+            dateLabel.setFont(new Font(FONT_NAME, Font.PLAIN, 10));
+            dateLabel.setForeground(Color.DARK_GRAY);
+            dateLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            titleContainer.add(dateLabel);
+        }
+
+        mainInfoPanel.add(titleContainer, BorderLayout.CENTER);
 
         eastPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         eastPanel.setOpaque(false);
@@ -93,36 +111,74 @@ public class ToDoPanel extends JPanel {
 
         add(mainInfoPanel);
 
+        if (toDo.getDescrizione() != null && !toDo.getDescrizione().isEmpty()) {
+            JTextArea descArea = new JTextArea(toDo.getDescrizione());
+            descArea.setFont(new Font(FONT_NAME, Font.ITALIC, 11));
+            descArea.setLineWrap(true);
+            descArea.setWrapStyleWord(true);
+            descArea.setEditable(false);
+            descArea.setOpaque(false);
+            descArea.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
+            descArea.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+            add(descArea);
+        }
+
+        JPanel contentPanel = new JPanel(new BorderLayout(15, 0));
+        contentPanel.setOpaque(false);
+        contentPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        if (toDo.getImagePath() != null && !toDo.getImagePath().isEmpty()) {
+            try {
+                ImageIcon icon = new ImageIcon(toDo.getImagePath());
+                int maxWidth = 150;
+                int maxHeight = 100;
+                float ratio = (float) icon.getIconWidth() / icon.getIconHeight();
+                int newWidth = maxWidth;
+                int newHeight = (int) (maxHeight / ratio);
+                if (newHeight > maxHeight) {
+                    newHeight = maxHeight;
+                    newWidth = (int) (maxWidth * ratio);
+                }
+                Image scaledImg = icon.getImage().getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+                JLabel imageLabel = new JLabel(new ImageIcon(scaledImg));
+                imageLabel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+
+                JPanel imgContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+                imgContainer.setOpaque(false);
+                imgContainer.add(imageLabel);
+                contentPanel.add(imgContainer, BorderLayout.WEST);
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Errore caricamento anteprima immagine", e);
+            }
+        }
+
         boolean haChecklist = (toDo.getChecklist() != null && !toDo.getChecklist().getAttivita().isEmpty());
         if (haChecklist) {
             completatoCheckbox.setEnabled(false);
             completatoCheckbox.setToolTipText("Completa le sotto-attività per finire questo ToDo");
-        } else {
-            completatoCheckbox.setEnabled(true);
-            completatoCheckbox.setToolTipText("Clicca per completare");
-        }
 
-        if (haChecklist) {
             JPanel subTaskPanel = new JPanel();
             subTaskPanel.setLayout(new BoxLayout(subTaskPanel, BoxLayout.Y_AXIS));
             subTaskPanel.setOpaque(false);
-            subTaskPanel.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 5)); // Indenta le attività
-
             for (Attivita a : toDo.getChecklist().getAttivita()) {
                 JCheckBox subCb = new JCheckBox(a.getNome());
                 subCb.setSelected(a.getStato() == StatoAttivita.COMPLETATO);
                 subCb.setOpaque(false);
                 subCb.setFont(new Font(FONT_NAME, Font.PLAIN, 12));
-
                 subCb.putClientProperty("ATTIVITA_OBJ", a);
-
                 subTaskCheckboxes.add(subCb);
                 subTaskPanel.add(subCb);
             }
-            add(subTaskPanel);
+            contentPanel.add(subTaskPanel, BorderLayout.CENTER);
+        } else {
+            completatoCheckbox.setEnabled(true);
         }
+
+        add(contentPanel);
         updateColoreSfondo();
         checkAndMarkExpired();
+
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, getPreferredSize().height));
     }
 
     /**
@@ -142,12 +198,15 @@ public class ToDoPanel extends JPanel {
      * il colore del titolo viene cambiato in rosso per evidenziare l'urgenza.
      */
     public void checkAndMarkExpired() {
-        if (toDo.getStato() == StatoToDo.NON_COMPLETATO &&
+        boolean scaduto = toDo.getStato() == StatoToDo.NON_COMPLETATO &&
                 toDo.getScadenza() != null &&
-                toDo.getScadenza().isBefore(LocalDate.now())) {
+                toDo.getScadenza().isBefore(LocalDate.now());
+        if(scaduto) {
             titleLabel.setForeground(Color.RED);
+            if(dateLabel != null) dateLabel.setForeground(Color.RED);
         } else {
             titleLabel.setForeground(Color.BLACK);
+            if(dateLabel != null) dateLabel.setForeground(Color.DARK_GRAY);
         }
     }
 
@@ -171,8 +230,11 @@ public class ToDoPanel extends JPanel {
             eastPanel.setBackground(bgColor);
         }
         for (Component c : getComponents()) {
-            if (c instanceof JPanel) {
-                c.setBackground(bgColor);
+            if (c instanceof JPanel panel) {
+                panel.setOpaque(false);
+            }
+            if (c instanceof JTextArea descArea) {
+                descArea.setOpaque(false);
             }
         }
     }

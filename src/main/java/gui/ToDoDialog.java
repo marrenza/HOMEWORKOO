@@ -206,10 +206,14 @@ public class ToDoDialog extends JDialog {
         gbc.gridx = 0; gbc.gridy = row; formPanel.add(new JLabel("Bacheca:"), gbc);
         gbc.gridx = 1; gbc.gridy = row++; gbc.weightx = 1.0; formPanel.add(cmbBacheca, gbc);
 
-        gbc.gridx = 0; gbc.gridy = row; gbc.gridwidth = 2; gbc.weighty = 1.0;
+        gbc.gridx = 0; gbc.gridy = row++; gbc.gridwidth = 2; gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         formPanel.add(checklistScrollPane, gbc);
 
+        gbc.gridx = 0; gbc.gridy = row++; gbc.gridwidth = 2; gbc.weighty = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.WEST;
+        formPanel.add(btnAddActivity, gbc);
 
         gbc.gridx = 0; gbc.gridwidth = 2; gbc.weighty = 0.0;
         formPanel.add(btnAddActivity, gbc);

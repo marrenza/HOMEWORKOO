@@ -11,8 +11,11 @@ import java.awt.*;
  * @version 1.0
  */
 public class RegistrazioneDialog extends JDialog {
-    /** Campo di testo per l'inserimento del nome completo. */
+    /** Campo di testo per l'inserimento del nome. */
     private JTextField txtNome;
+
+    /** Campo di testo per l'inserimento del cognome.*/
+    private JTextField txtCognome;
 
     /** Campo di testo per l'inserimento del login (username). */
     private JTextField txtLogin;
@@ -39,7 +42,7 @@ public class RegistrazioneDialog extends JDialog {
     public RegistrazioneDialog(Frame owner) {
         super(owner, "Registra Nuovo Utente", true);
 
-        setSize(400, 300);
+        setSize(400, 340);
         setLocationRelativeTo(owner);
         setLayout(new BorderLayout(10, 10));
         setResizable(false);
@@ -50,18 +53,21 @@ public class RegistrazioneDialog extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         txtNome = new JTextField(20);
+        txtCognome = new JTextField(20);
         txtLogin = new JTextField(20);
         txtPassword = new JPasswordField(20);
         txtConfermaPassword = new JPasswordField(20);
 
         gbc.gridx = 0; gbc.gridy = 0; formPanel.add(new JLabel("Nome:"), gbc);
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0; formPanel.add(txtNome, gbc);
-        gbc.gridx = 0; gbc.gridy = 1; formPanel.add(new JLabel("Login (username):"), gbc);
-        gbc.gridx = 1; gbc.gridy = 1; formPanel.add(txtLogin, gbc);
-        gbc.gridx = 0; gbc.gridy = 2; formPanel.add(new JLabel("Password:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 2; formPanel.add(txtPassword, gbc);
-        gbc.gridx = 0; gbc.gridy = 3; formPanel.add(new JLabel("Conferma Password:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 3; formPanel.add(txtConfermaPassword, gbc);
+        gbc.gridx = 0; gbc.gridy = 1; formPanel.add(new JLabel("Cognome:"), gbc);
+        gbc.gridx = 1; gbc.gridy = 1; formPanel.add(txtCognome, gbc);
+        gbc.gridx = 0; gbc.gridy = 2; formPanel.add(new JLabel("Login (username):"), gbc);
+        gbc.gridx = 1; gbc.gridy = 2; formPanel.add(txtLogin, gbc);
+        gbc.gridx = 0; gbc.gridy = 3; formPanel.add(new JLabel("Password:"), gbc);
+        gbc.gridx = 1; gbc.gridy = 3; formPanel.add(txtPassword, gbc);
+        gbc.gridx = 0; gbc.gridy = 4; formPanel.add(new JLabel("Conferma Password:"), gbc);
+        gbc.gridx = 1; gbc.gridy = 4; formPanel.add(txtConfermaPassword, gbc);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btnConferma = new JButton("Conferma");
@@ -82,6 +88,12 @@ public class RegistrazioneDialog extends JDialog {
     public String getNome() {
         return txtNome.getText();
     }
+
+    /**
+     * Restituisce il cognome inserito nel campo di testo.
+     * @return La stringa del cognome.
+     */
+    public String getCognome() {return txtCognome.getText();}
 
     /**
      * Restituisce il login inserito nel campo di testo.
